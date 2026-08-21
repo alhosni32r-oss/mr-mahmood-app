@@ -1,0 +1,33 @@
+{
+  "name": "MR.MAHMOOD — حاسبة المخاطر وسجل التداول",
+  "short_name": "MR.MAHMOOD",
+  "description": "حاسبة حجم اللوت وإدارة المخاطر مع سجل تداول شخصي كامل",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

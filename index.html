@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MR.MAHMOOD — حاسبة المخاطر وسجل التداول</title>
+
+<!-- PWA: installable app metadata -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0A0F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MR.MAHMOOD">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #0A0A0F;
+    --bg-2: #0D0D13;
+    --card: #16161D;
+    --card-2: #1B1B24;
+    --header-bg: #1E1E27;
+    --border: #24242E;
+    --text: #F2F2F6;
+    --muted: #8A8A96;
+    --muted-2: #5F5F6B;
+    --purple: #6C5CE7;
+    --purple-soft: #8B7FFF;
+    --purple-tint: #1F1B33;
+    --green: #22C55E;
+    --red: #FB7185;
+    --teal: #2DD4BF;
+    --pink: #F472B6;
+    --mono: 'JetBrains Mono', monospace;
+    --arabic: 'IBM Plex Sans Arabic', sans-serif;
+    --radius: 16px;
+  }
+
+  /* ---------------- Theme palettes ---------------- */
+  html[data-theme="light"]{
+    --bg:#F5F5F8; --bg-2:#FFFFFF; --card:#FFFFFF; --card-2:#F0F0F5; --header-bg:#EDEDF3;
+    --border:#E1E1E8; --text:#14141A; --muted:#6B6B78; --muted-2:#9A9AA6;
+    --purple:#6C5CE7; --purple-soft:#5647D9; --purple-tint:#EEEBFC;
+    --green:#16A34A; --red:#E11D48; --teal:#0D9488; --pink:#DB2777;
+  }
+  html[data-theme="midnight"]{
+    --bg:#070B14; --bg-2:#0B111E; --card:#111A2C; --card-2:#162238; --header-bg:#182640;
+    --border:#22314D; --text:#EAF1FB; --muted:#8496B5; --muted-2:#5A6B8A;
+    --purple:#3B82F6; --purple-soft:#60A5FA; --purple-tint:#132038;
+    --green:#22C55E; --red:#F87171; --teal:#38BDF8; --pink:#A78BFA;
+  }
+  html[data-theme="emerald"]{
+    --bg:#08120E; --bg-2:#0B1712; --card:#101F19; --card-2:#152A22; --header-bg:#17332A;
+    --border:#20402F; --text:#EAFBF2; --muted:#7FB39C; --muted-2:#4E7A67;
+    --purple:#10B981; --purple-soft:#34D399; --purple-tint:#123023;
+    --green:#34D399; --red:#FB7185; --teal:#2DD4BF; --pink:#F59E0B;
+  }
+  html[data-theme="gold"]{
+    --bg:#0B0B0C; --bg-2:#101010; --card:#161513; --card-2:#1C1A16; --header-bg:#201E19;
+    --border:#2E2A22; --text:#F5EFE0; --muted:#B8A98A; --muted-2:#6E644F;
+    --purple:#C9A227; --purple-soft:#E8C25A; --purple-tint:#241F12;
+    --green:#22C55E; --red:#EF4444; --teal:#D9B44A; --pink:#E8C25A;
+  }
+  html[data-theme="graphite"]{
+    --bg:#2B2D31; --bg-2:#26282C; --card:#313338; --card-2:#3A3D42; --header-bg:#3B3E44;
+    --border:#45474D; --text:#D6D7DB; --muted:#9A9CA3; --muted-2:#6E7075;
+    --purple:#7B8494; --purple-soft:#9AA3B2; --purple-tint:#3A3D45;
+    --green:#8FBC9A; --red:#C98A8A; --teal:#8FB3C4; --pink:#B497A8;
+  }
+
+  body, .stat-card, .panel, .sidebar, .modal, .field-group input, .field-group select{
+    transition: background-color .25s ease, border-color .25s ease, color .25s ease;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--arabic);
+    display:flex;
+    min-height:100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea{ font-family: inherit; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#2A2A36; border-radius:8px; }
+
+  /* ---------------- Sidebar ---------------- */
+  .sidebar{
+    width: 236px; flex-shrink:0;
+    background: var(--bg-2);
+    border-left: 1px solid var(--border);
+    display:flex; flex-direction:column;
+    padding: 24px 16px;
+    position: sticky; top:0; height:100vh;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding: 4px 8px 28px; }
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background: linear-gradient(135deg, var(--purple), #4C3FD6);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:15px;
+    box-shadow: 0 6px 16px -4px rgba(108,92,231,0.55);
+  }
+  .brand-text .name{font-size:14.5px; font-weight:700;}
+  .brand-signature{
+    font-family: 'Playfair Display', serif;
+    font-size: 16.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.4px;
+    background: linear-gradient(120deg, var(--purple-soft), var(--teal));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.25;
+  }
+  .brand-text .tag{font-size:11px; color: var(--muted-2);}
+  .menu-label{ font-size:10.5px; letter-spacing:1.4px; color: var(--muted-2); font-weight:700; padding: 8px 12px 10px; }
+  .menu{list-style:none; display:flex; flex-direction:column; gap:2px;}
+  .menu-item{
+    display:flex; align-items:center; gap:11px;
+    padding:9px 12px; border-radius:10px;
+    color: var(--muted); font-size:13.5px; font-weight:500;
+    cursor:pointer; transition: background .15s ease, color .15s ease;
+    position:relative; border:none; background:none; width:100%; text-align:right;
+  }
+  .menu-item svg{width:17px; height:17px; flex-shrink:0;}
+  .menu-item:hover{background: rgba(255,255,255,0.04); color: var(--text);}
+  .menu-item.active{ background: rgba(108,92,231,0.16); color: #C9C3FF; }
+  .menu-item.active::after{
+    content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px;
+    background: var(--purple-soft); border-radius:3px;
+  }
+  .sidebar-footer{ margin-top:auto; border-top: 1px solid var(--border); padding-top: 14px; }
+  .data-actions{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .data-actions button{
+    display:flex; align-items:center; gap:8px;
+    background:none; border:1px solid var(--border); color:var(--muted);
+    font-size:12px; padding:7px 10px; border-radius:8px; cursor:pointer;
+  }
+  .data-actions button:hover{ color:var(--text); border-color:#3A3A48; }
+  .data-actions svg{ width:14px; height:14px; }
+
+  /* ---------------- Main ---------------- */
+  .main{ flex:1; padding: 28px 34px 60px; max-width: 1400px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .topbar{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 26px; flex-wrap:wrap; gap:14px; }
+  .topbar h1{ font-size: 24px; font-weight:800; letter-spacing:-0.01em; margin-bottom:4px;}
+  .topbar p{ color: var(--muted); font-size: 13.5px; }
+  .btn-primary{
+    display:flex; align-items:center; gap:8px;
+    background: linear-gradient(135deg, var(--purple), #5647D9);
+    color:#fff; border:none; padding: 10px 18px; border-radius: 10px;
+    font-size: 13.5px; font-weight:600; cursor:pointer;
+    box-shadow: 0 8px 20px -8px rgba(108,92,231,0.65);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-1px); }
+  .btn-primary svg{width:15px; height:15px;}
+  .btn-ghost{
+    background:none; border:1px solid var(--border); color:var(--text);
+    padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn-ghost:hover{ border-color:#3A3A48; }
+  .btn-danger{
+    background:rgba(251,113,133,0.14); color:var(--red); border:1px solid rgba(251,113,133,0.3);
+    padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .btn-edit{
+    background:rgba(139,127,255,0.14); color:var(--purple-soft); border:1px solid rgba(139,127,255,0.3);
+    padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .btn-edit:hover{ background:rgba(139,127,255,0.22); }
+  .btn-danger:hover{ background:rgba(251,113,133,0.22); }
+  .row-actions{ display:flex; gap:6px; white-space:nowrap; }
+
+  /* ---------------- Cards / grids ---------------- */
+  .stats-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
+  .stat-card{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .stat-label{ font-size:12.5px; color: var(--muted); font-weight:500;}
+  .stat-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background: rgba(108,92,231,0.14); }
+  .stat-icon svg{ width:16px; height:16px; }
+  .stat-value{ font-size: 26px; font-weight:800; letter-spacing:-0.01em; font-family: var(--mono); margin-bottom:12px;}
+  .stat-deltas{ display:flex; gap:6px; flex-wrap:wrap; }
+  .pill{ font-size:10.5px; font-family: var(--mono); font-weight:600; padding:3px 7px; border-radius:6px; }
+  .pill.up{ background: rgba(34,197,94,0.14); color: var(--green); }
+  .pill.down{ background: rgba(251,113,133,0.14); color: var(--red); }
+  .pill.flat{ background: rgba(138,138,150,0.14); color: var(--muted); }
+  .pill .period{ color: var(--muted-2); font-weight:500; margin-right:3px;}
+
+  .charts-grid{ display:grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  .panel{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 20px 18px; display:flex; flex-direction:column; }
+  .panel-title{ font-size:14px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+  .equity-canvas-wrap{ height:210px; position:relative; }
+  .gauge-wrap{ position:relative; height:150px; display:flex; align-items:center; justify-content:center; }
+  .gauge-center{ position:absolute; top:58%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .gauge-center .pct{ font-size:28px; font-weight:800; font-family:var(--mono); }
+  .gauge-center .lbl{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .gauge-scale{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted-2); margin-top:4px; font-family:var(--mono); }
+  .donut-wrap{ position:relative; height:130px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;}
+  .donut-center{ position:absolute; text-align:center; }
+  .donut-center .n{ font-size:20px; font-weight:800; font-family:var(--mono); }
+  .donut-center .l{ font-size:10px; color:var(--muted); }
+  .perf-rows{ display:flex; flex-direction:column; gap:9px; margin-top:auto; }
+  .perf-row{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; }
+  .perf-row .k{ color:var(--muted); display:flex; align-items:center; gap:7px;}
+  .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .perf-row .v{ font-family:var(--mono); font-weight:700; }
+  .v.pos{ color:var(--green); } .v.neg{ color:var(--red); }
+
+  .bottom-grid{ display:grid; grid-template-columns: 1.4fr 1fr; gap:16px; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ text-align:right; font-size:10.5px; color:var(--muted-2); font-weight:600; letter-spacing:0.3px; padding: 0 6px 10px; border-bottom:1px solid var(--border); }
+  tbody td{ padding:11px 6px; font-size:12.5px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .pair-cell{ display:flex; align-items:center; gap:9px; font-weight:600; }
+  .pair-flag{ width:26px; height:26px; border-radius:7px; background:var(--card-2); display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:var(--muted); flex-shrink:0;}
+  .badge{ font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap;}
+  .badge.buy{ background:rgba(34,197,94,0.14); color:var(--green); }
+  .badge.sell{ background:rgba(251,113,133,0.14); color:var(--red); }
+  .badge.win{ background:rgba(45,212,191,0.14); color:var(--teal); }
+  .badge.loss{ background:rgba(244,114,182,0.14); color:var(--pink); }
+  .badge.be{ background:rgba(138,138,150,0.14); color:var(--muted); }
+  .mono-cell{ font-family:var(--mono); text-align:right; }
+  .empty-state{ text-align:center; color:var(--muted-2); font-size:12.5px; padding:34px 10px; }
+
+  .calendar-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
+  .cal-day{ aspect-ratio:1; border-radius:7px; background: var(--card-2); display:flex; align-items:center; justify-content:center; font-size:10px; font-family:var(--mono); color:var(--muted-2); border: 1px solid var(--border); }
+  .cal-day.win{ background: rgba(34,197,94,0.22); color:#B9F5D0; border-color: rgba(34,197,94,0.3);}
+  .cal-day.loss{ background: rgba(251,113,133,0.20); color:#FFD3DA; border-color: rgba(251,113,133,0.28);}
+  .cal-legend{ display:flex; gap:16px; margin-top:14px; font-size:11px; color:var(--muted); }
+  .cal-legend span{ display:flex; align-items:center; gap:6px; }
+
+  /* ---------------- Calculator page ---------------- */
+  .calc-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  .field-group{ margin-bottom:16px; }
+  .field-group label{ display:block; font-size:12px; color:var(--muted); margin-bottom:7px; font-weight:500; }
+  .field-group input, .field-group select{
+    width:100%; background: var(--purple-tint); border:1px solid var(--border);
+    color: var(--purple-soft); font-family:var(--mono); font-weight:700; font-size:15px;
+    padding:11px 12px; border-radius:10px; outline:none; transition: border-color .15s ease;
+  }
+  .field-group select{ cursor:pointer; color:var(--text); font-family:inherit; font-weight:600; }
+  .field-group input:focus, .field-group select:focus{ border-color: var(--purple-soft); }
+  .field-hint{ font-size:11px; color:var(--muted-2); margin-top:6px; }
+
+  .result-hero{ text-align:center; padding:22px 16px; background:var(--card-2); border-radius:14px; border:2px solid var(--purple); margin-bottom:16px;}
+  .result-hero .k{ font-size:11.5px; color:var(--muted); letter-spacing:0.5px; margin-bottom:6px; }
+  .result-hero .v{ font-size:44px; font-weight:800; font-family:var(--mono); color:var(--teal); line-height:1; }
+  .result-hero .u{ font-size:12px; color:var(--muted); margin-top:6px;}
+
+  .result-rows{ display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:12px; overflow:hidden; }
+  .result-row{ background:var(--card); display:flex; justify-content:space-between; align-items:center; padding:13px 16px; }
+  .result-row .k{ font-size:12.5px; color:var(--muted); }
+  .result-row .v{ font-family:var(--mono); font-weight:700; font-size:14px; }
+
+  .gauge-track{ height:10px; border-radius:6px; background: var(--card-2); border:1px solid var(--border); overflow:hidden; margin-top:14px;}
+  .gauge-fill-bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--green), #F5C043, var(--red)); transition: width .25s ease; }
+  .gauge-caption{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted-2); margin-top:6px; }
+  .warn-box{ display:none; margin-top:14px; padding:12px 14px; border-radius:10px; background: rgba(251,113,133,0.1); border:1px solid rgba(251,113,133,0.3); color: var(--red); font-size:12.5px; }
+
+  /* reference quick table */
+  .ref-table-wrap{ margin-top:18px; }
+  .ref-table{ width:100%; border-collapse:collapse; }
+  .ref-table th{ font-size:10.5px; color:var(--muted-2); text-align:center; padding:8px 4px; border-bottom:1px solid var(--border); }
+  .ref-table td{ font-size:12px; text-align:center; padding:8px 4px; border-bottom:1px solid var(--border); font-family:var(--mono); color:var(--text); }
+
+  /* ---------------- Journal page ---------------- */
+  .journal-toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  .journal-toolbar select, .journal-toolbar input{
+    background:var(--card); border:1px solid var(--border); color:var(--text);
+    padding:8px 12px; border-radius:9px; font-size:12.5px;
+  }
+  .journal-table-wrap{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:6px 20px 12px; overflow-x:auto; }
+  .journal-table-wrap table{ min-width:1020px; }
+  .comment-cell{ max-width:220px; color:var(--muted); font-size:11.5px; }
+  .thumb{ width:34px; height:34px; border-radius:7px; object-fit:cover; border:1px solid var(--border); cursor:pointer; }
+
+  .period-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:18px; }
+
+  /* ---------------- Modal ---------------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(5,5,8,0.7);
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background:var(--bg-2); border:1px solid var(--border); border-radius:18px;
+    width:100%; max-width:560px; max-height:88vh; overflow-y:auto; padding:26px 26px 22px;
+  }
+  .modal h2{ font-size:18px; font-weight:800; margin-bottom:4px; }
+  .modal .modal-sub{ font-size:12px; color:var(--muted); margin-bottom:20px; }
+  .modal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .modal-grid .full{ grid-column: 1 / -1; }
+  .modal .field-group{ margin-bottom:0; }
+  .modal textarea{
+    width:100%; background:var(--card); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:10px 12px; font-size:13px; min-height:64px; resize:vertical; outline:none;
+  }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+  .file-drop{
+    border:1.5px dashed var(--border); border-radius:10px; padding:14px; text-align:center;
+    font-size:12px; color:var(--muted-2); cursor:pointer; position:relative;
+  }
+  .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .file-preview{ margin-top:10px; max-height:110px; border-radius:8px; display:none; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--card-2); border:1px solid var(--border); color:var(--text);
+    padding:12px 22px; border-radius:10px; font-size:13px; font-weight:600;
+    opacity:0; pointer-events:none; transition: all .25s ease; z-index:200;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------------- Settings page ---------------- */
+  .theme-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+  .theme-card{
+    background: var(--card); border: 2px solid var(--border); border-radius: 14px;
+    padding: 16px; cursor:pointer; transition: border-color .15s ease, transform .12s ease;
+  }
+  .theme-card:hover{ transform: translateY(-2px); }
+  .theme-card.active{ border-color: var(--purple-soft); box-shadow: 0 0 0 3px rgba(108,92,231,0.18); }
+  .theme-swatch{ display:flex; height:44px; border-radius:9px; overflow:hidden; margin-bottom:12px; border:1px solid var(--border); }
+  .theme-swatch span{ flex:1; }
+  .theme-card-name{ font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .theme-card-check{ width:18px; height:18px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .theme-card.active .theme-card-check{ background: var(--purple-soft); border-color: var(--purple-soft); }
+  .theme-card.active .theme-card-check svg{ width:11px; height:11px; stroke:#fff; }
+  .theme-card-check svg{ display:none; }
+  .theme-card.active .theme-card-check svg{ display:block; }
+
+  .settings-section{ margin-bottom:26px; }
+  .settings-section h3{ font-size:14px; font-weight:700; margin-bottom:4px; }
+  .settings-section .settings-sub{ font-size:12px; color:var(--muted); margin-bottom:16px; }
+
+  .quick-toggle{
+    display:flex; align-items:center; gap:8px; width:100%;
+    background: var(--card); border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:9px; font-size:12px; cursor:pointer; margin-bottom:10px;
+  }
+  .quick-toggle svg{ width:14px; height:14px; }
+  .quick-toggle:hover{ border-color:#3A3A48; }
+
+  @media (max-width: 1180px){
+    .stats-grid{ grid-template-columns: repeat(2,1fr); }
+    .charts-grid{ grid-template-columns: 1fr; }
+    .bottom-grid{ grid-template-columns: 1fr; }
+    .calc-grid{ grid-template-columns: 1fr; }
+    .period-grid{ grid-template-columns: 1fr; }
+    .theme-grid{ grid-template-columns: repeat(2,1fr); }
+  }
+
+  /* Tablets / small laptops (Android tablets, split-screen Windows) */
+  @media (max-width: 900px){
+    body{ flex-direction:column; }
+    .sidebar{
+      width:100%; height:auto; position:relative;
+      flex-direction:row; flex-wrap:wrap; align-items:center;
+      padding:12px 16px; border-left:none; border-bottom:1px solid var(--border);
+      gap:10px 18px;
+    }
+    .brand{ padding:0; flex-shrink:0; }
+    .menu-label{ display:none; }
+    .menu{ flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:6px; flex:1; min-width:0; }
+    .menu-item{ white-space:nowrap; flex-shrink:0; padding:8px 12px; }
+    .menu-item.active::after{ display:none; }
+    .menu-item.active{ box-shadow: inset 0 0 0 1px rgba(139,127,255,0.35); }
+    .sidebar-footer{
+      width:100%; margin-top:0; border-top:1px solid var(--border); padding-top:10px;
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .quick-toggle{ width:auto; margin-bottom:0; flex:1; min-width:170px; }
+    .data-actions{ flex-direction:row; flex-wrap:wrap; gap:8px; margin-bottom:0; flex:2; min-width:220px; }
+    .data-actions button{ flex:1; min-width:140px; justify-content:center; }
+    .sidebar-footer p{ display:none; }
+    .main{ padding:22px; }
+  }
+
+  /* Phones (Android / small Windows tablets in portrait) */
+  @media (max-width: 600px){
+    .main{ padding:16px; padding-bottom:40px; }
+    .topbar{ margin-bottom:20px; }
+    .topbar h1{ font-size:20px; }
+    .topbar p{ font-size:12.5px; }
+    .btn-primary{ padding:9px 14px; font-size:12.5px; width:100%; justify-content:center; }
+    .topbar{ flex-direction:column; align-items:stretch; }
+
+    .stats-grid{ grid-template-columns: 1fr 1fr; gap:10px; }
+    .stat-card{ padding:14px 14px; }
+    .stat-value{ font-size:20px; }
+    .stat-icon{ width:28px; height:28px; }
+
+    .panel{ padding:16px; border-radius:14px; }
+    .equity-canvas-wrap{ height:170px; }
+    .gauge-wrap{ height:130px; }
+    .donut-wrap{ height:110px; }
+
+    .modal{ padding:20px 18px 18px; border-radius:14px; }
+    .modal-grid{ grid-template-columns:1fr; gap:12px; }
+    .modal h2{ font-size:16px; }
+
+    .result-hero .v{ font-size:34px; }
+    .theme-grid{ grid-template-columns: 1fr 1fr; gap:10px; }
+    .theme-card{ padding:12px; }
+    .theme-swatch{ height:34px; }
+
+    .journal-toolbar select, .journal-toolbar input{ flex:1; min-width:120px; }
+    .journal-toolbar{ gap:8px; }
+
+    .sidebar{ padding:10px 12px; }
+    .brand-mark{ width:30px; height:30px; font-size:13px; }
+    .brand-signature{ font-size:14.5px !important; }
+    .data-actions button{ font-size:11px; padding:6px 8px; min-width:120px; }
+    .quick-toggle{ font-size:11px; min-width:140px; }
+  }
+
+  /* Very small phones */
+  @media (max-width: 380px){
+    .stats-grid{ grid-template-columns: 1fr; }
+    .theme-grid{ grid-template-columns: 1fr; }
+    .stat-value{ font-size:22px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">M</div>
+    <div class="brand-text"><div class="name brand-signature">MR.MAHMOOD</div><div class="tag">إدارة المخاطر وسجل التداول</div></div>
+  </div>
+  <div class="menu-label">القائمة</div>
+  <ul class="menu" style="list-style:none;">
+    <li><button class="menu-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      لوحة التحكم</button></li>
+    <li><button class="menu-item" data-view="calculator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h2M8 15h2M12 15h2M16 15h2"/></svg>
+      حاسبة المخاطر</button></li>
+    <li><button class="menu-item" data-view="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+      سجل التداول</button></li>
+    <li><button class="menu-item" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+      الإعدادات</button></li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <button class="quick-toggle" id="quickThemeToggle">
+      <svg id="quickToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
+      <span id="quickToggleLabel">التبديل للوضع النهاري</span>
+    </button>
+    <div class="data-actions">
+      <button id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        تصدير البيانات (JSON)
+      </button>
+      <button id="importBtn" style="position:relative;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 5v3a1 1 0 001 1h14a1 1 0 001-1V5"/></svg>
+        استيراد بيانات
+        <input type="file" id="importFile" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+      </button>
+    </div>
+    <p id="storageNote" style="font-size:10px; color:var(--muted-2); line-height:1.6;">
+      بياناتك محفوظة في هذه الجلسة فقط. استخدم "تصدير" لحفظ نسخة، و"استيراد" لاستعادتها لاحقاً.
+    </p>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section class="view active" id="view-dashboard">
+    <div class="topbar">
+      <div>
+        <h1>لوحة التحكم</h1>
+        <p>نظرة شاملة على أداء تداولك</p>
+      </div>
+      <button class="btn-primary" id="quickAddBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        إضافة صفقة سريعة
+      </button>
+    </div>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">نسبة النجاح</span>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
+        </div>
+        <div class="stat-value" id="statWinRate">—</div>
+        <div class="stat-deltas" id="statWinRateDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">صافي الربح/الخسارة</span>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        </div>
+        <div class="stat-value" id="statNetPL">—</div>
+        <div class="stat-deltas" id="statNetPLDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">عامل الربح (Profit Factor)</span>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+        </div>
+        <div class="stat-value" id="statPF">—</div>
+        <div class="stat-deltas" id="statPFDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">عدد الصفقات</span>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><rect x="3" y="10" width="4" height="10"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg></div>
+        </div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-deltas" id="statTotalDelta"></div>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <div class="panel">
+        <div class="panel-title">منحنى الأداء (Equity Curve)</div>
+        <div class="equity-canvas-wrap"><canvas id="equityChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">نسبة النجاح</div>
+        <div class="gauge-wrap"><canvas id="gaugeChart"></canvas>
+          <div class="gauge-center"><div class="pct" id="gaugePct">0%</div><div class="lbl" id="gaugeLbl">0 صفقة</div></div>
+        </div>
+        <div class="gauge-scale"><span>0%</span><span>100%</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">الأداء</div>
+        <div class="donut-wrap"><canvas id="perfChart"></canvas>
+          <div class="donut-center"><div class="n" id="perfCenter">0/0</div><div class="l">رابحة</div></div>
+        </div>
+        <div class="perf-rows">
+          <div class="perf-row"><span class="k"><span class="dot" style="background:var(--green)"></span>أفضل صفقة</span><span class="v pos" id="bestTrade">—</span></div>
+          <div class="perf-row"><span class="k"><span class="dot" style="background:var(--red)"></span>أسوأ صفقة</span><span class="v neg" id="worstTrade">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="panel">
+        <div class="panel-title">أحدث الصفقات</div>
+        <div id="recentTradesWrap"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">تقويم الصفقات (هذا الشهر)</div>
+        <div class="calendar-grid" id="calGrid"></div>
+        <div class="cal-legend">
+          <span><span class="dot" style="background:rgba(34,197,94,0.55)"></span>يوم رابح</span>
+          <span><span class="dot" style="background:rgba(251,113,133,0.5)"></span>يوم خاسر</span>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ===================== CALCULATOR ===================== -->
+  <section class="view" id="view-calculator">
+    <div class="topbar">
+      <div><h1>حاسبة حجم اللوت والمخاطر</h1><p>احسب حجم اللوت المناسب بحيث تبقى خسارتك ثابتة في كل صفقة</p></div>
+    </div>
+
+    <div class="calc-grid">
+      <div class="panel">
+        <div class="panel-title">بيانات الإدخال</div>
+        <div class="field-group"><label>رأس المال (بالدولار)</label><input type="number" id="calcBalance" value="1000" min="1" step="1"></div>
+        <div class="field-group"><label>المخاطرة المطلوبة لكل صفقة ($)</label><input type="number" id="calcRisk" value="15" min="0.1" step="0.5"></div>
+        <div class="field-group"><label>عدد نقاط وقف الخسارة (Pips)</label><input type="number" id="calcSL" value="30" min="1" step="1"></div>
+        <div class="field-group"><label>عدد نقاط جني الأرباح (اختياري)</label><input type="number" id="calcTP" value="60" min="0" step="1"></div>
+        <div class="field-group">
+          <label>زوج العملة</label>
+          <select id="calcPair"></select>
+        </div>
+        <div class="field-group" id="customPipWrap" style="display:none;">
+          <label>قيمة النقطة للوت القياسي ($)</label>
+          <input type="number" id="calcCustomPip" value="10" min="0.1" step="0.1">
+        </div>
+        <div class="field-hint">القيم تقريبية وتتغير مع سعر الصرف اللحظي — تحقق من منصتك قبل الصفقات الكبيرة.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">النتائج</div>
+        <div class="result-hero">
+          <div class="k">حجم اللوت المقترح</div>
+          <div class="v" id="resLot">0.00</div>
+          <div class="u">لوت (مقرب لأقرب 0.01)</div>
+        </div>
+        <div class="result-rows">
+          <div class="result-row"><span class="k">الخسارة عند وقف الخسارة</span><span class="v" id="resLoss" style="color:var(--red)">—</span></div>
+          <div class="result-row"><span class="k">الربح المتوقع عند الهدف</span><span class="v" id="resProfit" style="color:var(--green)">—</span></div>
+          <div class="result-row"><span class="k">نسبة المخاطرة من رأس المال</span><span class="v" id="resPct">—</span></div>
+          <div class="result-row"><span class="k">نسبة المخاطرة إلى العائد (R:R)</span><span class="v" id="resRR">—</span></div>
+        </div>
+        <div class="gauge-track"><div class="gauge-fill-bar" id="riskGaugeFill"></div></div>
+        <div class="gauge-caption"><span>مخاطرة منخفضة</span><span id="riskGaugeLabel">0%</span><span>مخاطرة مرتفعة</span></div>
+        <div class="warn-box" id="calcWarn"></div>
+      </div>
+    </div>
+
+    <div class="panel ref-table-wrap">
+      <div class="panel-title">جدول مرجعي سريع (بنفس المخاطرة وزوج العملة أعلاه)</div>
+      <table class="ref-table">
+        <thead><tr><th>نقاط وقف الخسارة</th><th>حجم اللوت</th><th>الخسارة ($)</th><th>% من الحساب</th></tr></thead>
+        <tbody id="refTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== JOURNAL ===================== -->
+  <section class="view" id="view-journal">
+    <div class="topbar">
+      <div><h1>سجل التداول</h1><p>سجّل كل صفقة بعد إغلاقها وتتبع أداءك أسبوعياً وشهرياً</p></div>
+      <button class="btn-primary" id="addTradeBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        إضافة صفقة جديدة
+      </button>
+    </div>
+
+    <div class="journal-toolbar">
+      <select id="filterPeriod">
+        <option value="all">كل الصفقات</option>
+        <option value="week">هذا الأسبوع</option>
+        <option value="month">هذا الشهر</option>
+      </select>
+      <select id="filterResult">
+        <option value="all">كل النتائج</option>
+        <option value="win">رابحة فقط</option>
+        <option value="loss">خاسرة فقط</option>
+        <option value="be">متعادلة فقط</option>
+      </select>
+    </div>
+
+    <div class="journal-table-wrap">
+      <table>
+        <thead>
+          <tr><th>التاريخ</th><th>الأسبوع</th><th>الشهر</th><th>الزوج</th><th>النوع</th><th>اللوت</th><th>SL</th><th>TP</th><th>النتيجة</th><th>الربح/الخسارة</th><th>التعليق</th><th>قبل</th><th>بعد</th><th></th></tr>
+        </thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+      <div class="empty-state" id="journalEmpty">لا توجد صفقات بعد — اضغط "إضافة صفقة جديدة" لبدء سجلك</div>
+    </div>
+
+    <div class="period-grid">
+      <div class="panel">
+        <div class="panel-title">الأداء الأسبوعي</div>
+        <table>
+          <thead><tr><th>الأسبوع</th><th>عدد</th><th>رابحة</th><th>خاسرة</th><th>نسبة النجاح</th><th>صافي الربح</th></tr></thead>
+          <tbody id="weeklyBody"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-title">الأداء الشهري</div>
+        <table>
+          <thead><tr><th>الشهر</th><th>عدد</th><th>رابحة</th><th>خاسرة</th><th>نسبة النجاح</th><th>صافي الربح</th></tr></thead>
+          <tbody id="monthlyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <section class="view" id="view-settings">
+    <div class="topbar">
+      <div><h1>الإعدادات</h1><p>خصّص مظهر التطبيق حسب ما يناسبك</p></div>
+    </div>
+
+    <div class="panel settings-section" id="installAppSection" style="display:none;">
+      <h3>📲 تثبيت التطبيق</h3>
+      <div class="settings-sub">ثبّت MR.MAHMOOD كتطبيق مستقل على جهازك — أيقونة على الشاشة الرئيسية أو قائمة ابدأ، ويفتح في نافذته الخاصة بدون شريط المتصفح، ويعمل حتى بدون إنترنت بعد أول فتح.</div>
+      <button class="btn-primary" id="installAppBtn" style="padding:9px 18px; font-size:13px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px;"><path d="M12 3v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        تثبيت التطبيق الآن
+      </button>
+    </div>
+
+    <div class="panel settings-section">
+      <h3>مظهر التطبيق (Theme)</h3>
+      <div class="settings-sub">اختر النمط اللوني الذي يناسبك — يشمل الوضع الليلي والنهاري وأنماط إضافية</div>
+      <div class="theme-grid" id="themeGrid">
+        <div class="theme-card" data-theme="dark">
+          <div class="theme-swatch"><span style="background:#0A0A0F"></span><span style="background:#16161D"></span><span style="background:#6C5CE7"></span><span style="background:#2DD4BF"></span></div>
+          <div class="theme-card-name">بنفسجي داكن
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+        <div class="theme-card" data-theme="light">
+          <div class="theme-swatch"><span style="background:#F5F5F8"></span><span style="background:#FFFFFF"></span><span style="background:#6C5CE7"></span><span style="background:#0D9488"></span></div>
+          <div class="theme-card-name">فاتح نهاري
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+        <div class="theme-card" data-theme="midnight">
+          <div class="theme-swatch"><span style="background:#070B14"></span><span style="background:#111A2C"></span><span style="background:#3B82F6"></span><span style="background:#38BDF8"></span></div>
+          <div class="theme-card-name">أزرق منتصف الليل
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+        <div class="theme-card" data-theme="emerald">
+          <div class="theme-swatch"><span style="background:#08120E"></span><span style="background:#101F19"></span><span style="background:#10B981"></span><span style="background:#F59E0B"></span></div>
+          <div class="theme-card-name">زمردي داكن
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+        <div class="theme-card" data-theme="gold">
+          <div class="theme-swatch"><span style="background:#0B0B0C"></span><span style="background:#161513"></span><span style="background:#C9A227"></span><span style="background:#E8C25A"></span></div>
+          <div class="theme-card-name">ذهبي وأسود
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+        <div class="theme-card" data-theme="graphite">
+          <div class="theme-swatch"><span style="background:#2B2D31"></span><span style="background:#313338"></span><span style="background:#7B8494"></span><span style="background:#8FB3C4"></span></div>
+          <div class="theme-card-name">رمادي مريح للعين
+            <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-sub" style="margin-top:12px; margin-bottom:0;">
+        💡 "رمادي مريح للعين" يعتمد ألواناً رمادية منخفضة التباين بدل الأسود والأبيض الحادين — مناسب للاستخدام الطويل تحت الإضاءة الخافتة.
+      </div>
+    </div>
+
+    <div class="panel settings-section">
+      <h3>💾 الحفظ التلقائي إلى ملف على جهازك</h3>
+      <div class="settings-sub">
+        اربط ملفاً واحداً على جهازك مرة واحدة فقط — بعدها ستُحفظ كل صفقة تضيفها تلقائياً وبصمت داخل هذا الملف، دون أي نوافذ تنزيل متكررة ودون الاعتماد على تخزين المتصفح المؤقت.
+      </div>
+
+      <div id="autoSaveStatusBox" style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span id="autoSaveDot" style="width:9px; height:9px; border-radius:50%; background:var(--muted-2); flex-shrink:0;"></span>
+          <span id="autoSaveStatusText" style="font-size:13px; color:var(--muted);">غير مرتبط بأي ملف بعد</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-ghost" id="reconnectAutoSaveBtn" style="display:none; padding:8px 14px; font-size:12.5px;">إعادة الاتصال بالملف السابق</button>
+          <button class="btn-primary" id="linkAutoSaveBtn" style="padding:8px 14px; font-size:12.5px; box-shadow:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:14px;height:14px;"><path d="M13.5 6.5l4 4L7 21H3v-4z"/><path d="M17.5 3.5a2.1 2.1 0 013 3l-1 1-3-3z"/></svg>
+            ربط ملف حفظ تلقائي
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-sub" id="autoSaveCompatNote" style="margin-bottom:0;">
+        هذه الميزة مدعومة في Chrome وEdge. بعد الربط، إن أغلقت المتصفح تماماً، سيطلب منك ضغطة واحدة عند العودة لاستئناف الحفظ (لأسباب أمنية في المتصفح) — وهذا لا يزال أبسط بكثير من التصدير اليدوي في كل مرة.
+      </div>
+    </div>
+
+    <div class="panel settings-section">
+      <h3>عن التطبيق</h3>
+      <div class="settings-sub" id="aboutStorageText" style="margin-bottom:0;">
+        MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== ADD TRADE MODAL ===================== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>إضافة صفقة جديدة</h2>
+    <div class="modal-sub">سجّل تفاصيل الصفقة بعد إغلاقها</div>
+    <form id="tradeForm">
+      <div class="modal-grid">
+        <div class="field-group"><label>التاريخ</label><input type="date" id="fDate" required></div>
+        <div class="field-group"><label>زوج العملة</label><select id="fPair" required></select></div>
+        <div class="field-group"><label>نوع الصفقة</label>
+          <select id="fDirection"><option value="شراء">شراء</option><option value="بيع">بيع</option></select>
+        </div>
+        <div class="field-group"><label>حجم اللوت</label><input type="number" id="fLot" step="0.01" min="0.01" value="0.10" required></div>
+        <div class="field-group"><label>نقاط SL</label><input type="number" id="fSL" step="1" min="0"></div>
+        <div class="field-group"><label>نقاط TP</label><input type="number" id="fTP" step="1" min="0"></div>
+        <div class="field-group"><label>النتيجة</label>
+          <select id="fResult" required><option value="رابحة">رابحة</option><option value="خاسرة">خاسرة</option><option value="متعادلة">متعادلة</option></select>
+        </div>
+        <div class="field-group"><label>الربح / الخسارة ($)</label><input type="number" id="fPL" step="0.01" required placeholder="مثال: 45 أو -20-"></div>
+        <div class="field-group full"><label>التعليق / سبب الربح أو الخسارة</label><textarea id="fComment" placeholder="مثال: التزمت بالخطة ودخلت عند تأكيد الاتجاه..."></textarea></div>
+        <div class="field-group">
+          <label>📥 صورة الدخول (قبل)</label>
+          <div class="file-drop">اسحب صورة هنا أو اضغط للاختيار<input type="file" id="fImageBefore" accept="image/*"></div>
+          <img id="fImageBeforePreview" class="file-preview">
+        </div>
+        <div class="field-group">
+          <label>📤 صورة الخروج (بعد)</label>
+          <div class="file-drop">اسحب صورة هنا أو اضغط للاختيار<input type="file" id="fImageAfter" accept="image/*"></div>
+          <img id="fImageAfterPreview" class="file-preview">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="cancelModal">إلغاء</button>
+        <button type="submit" class="btn-primary">حفظ الصفقة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   DATA — currency pairs with approximate pip value per standard lot ($)
+   ===================================================================== */
+const PAIRS = {
+  "EUR/USD": 10, "GBP/USD": 10, "AUD/USD": 10, "NZD/USD": 10,
+  "USD/CAD": 7.4, "USD/CHF": 11.3, "USD/JPY": 9.1,
+  "EUR/GBP": 12.6, "EUR/JPY": 9.1, "EUR/CHF": 11.3, "EUR/AUD": 6.5, "EUR/CAD": 7.4, "EUR/NZD": 5.9,
+  "GBP/JPY": 9.1, "GBP/CHF": 11.3, "GBP/AUD": 6.5, "GBP/CAD": 7.4, "GBP/NZD": 5.9,
+  "AUD/JPY": 9.1, "AUD/CHF": 11.3, "AUD/CAD": 7.4, "AUD/NZD": 8.7,
+  "NZD/JPY": 9.1, "NZD/CHF": 11.3, "NZD/CAD": 7.4,
+  "CAD/JPY": 9.1, "CAD/CHF": 11.3, "CHF/JPY": 9.1,
+  "USD/TRY": 10, "USD/ZAR": 10, "USD/MXN": 10, "USD/SEK": 10, "USD/NOK": 10, "USD/SGD": 10, "USD/HKD": 10, "USD/PLN": 10,
+  "EUR/TRY": 10, "EUR/SEK": 10, "EUR/NOK": 10, "EUR/PLN": 10,
+  "XAU/USD (ذهب)": 1, "XAG/USD (فضة)": 5,
+};
+const CUSTOM_LABEL = "مخصص (إدخال يدوي)";
+
+/* =====================================================================
+   STATE — trades persist to localStorage when the browser allows it
+   (works once the file is saved and opened directly on your device;
+   it will NOT persist inside a chat preview/iframe environment).
+   ===================================================================== */
+let trades = [];   // {id,date,pair,direction,lot,sl,tp,result,pl,comment,imageBefore,imageAfter}
+let charts = {};   // Chart.js instances, kept so we can .update() instead of rebuild
+
+const STORAGE_KEY = 'mrmahmood_trades_v1';
+const THEME_STORAGE_KEY = 'mrmahmood_theme_v1';
+let storageAvailable = false;
+try{
+  const testKey = '__mrmahmood_test__';
+  localStorage.setItem(testKey, '1');
+  localStorage.removeItem(testKey);
+  storageAvailable = true;
+}catch(e){ storageAvailable = false; }
+
+function saveTradesToStorage(){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); }catch(e){}
+}
+function loadTradesFromStorage(){
+  if(!storageAvailable) return;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ trades = JSON.parse(raw); }
+  }catch(e){}
+}
+function saveThemeToStorage(name){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(THEME_STORAGE_KEY, name); }catch(e){}
+}
+function loadThemeFromStorage(){
+  if(!storageAvailable) return null;
+  try{ return localStorage.getItem(THEME_STORAGE_KEY); }catch(e){ return null; }
+}
+
+// Warn before an accidental refresh/close if there's unsaved-to-file data.
+window.addEventListener('beforeunload', (e)=>{
+  if(trades.length > 0 && !storageAvailable){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+/* =====================================================================
+   AUTO-SAVE TO A REAL FILE ON DISK (File System Access API)
+   Chrome/Edge only. Lets the user link one file once; after that every
+   trade write is mirrored to that file silently — this is far more
+   durable than localStorage, which some browsers clear for file:// pages
+   when the browser fully closes.
+   ===================================================================== */
+const fsApiSupported = 'showSaveFilePicker' in window;
+let autoSaveFileHandle = null;
+
+const IDB_NAME = 'mrmahmood_fs_db';
+const IDB_STORE = 'handles';
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(IDB_STORE); };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbSet(key, val){
+  try{
+    const db = await idbOpen();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(val, key);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(e){}
+}
+async function idbGet(key){
+  try{
+    const db = await idbOpen();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }catch(e){ return null; }
+}
+
+function updateAutoSaveStatus(state, fileName){
+  const dot = document.getElementById('autoSaveDot');
+  const text = document.getElementById('autoSaveStatusText');
+  const reconnectBtn = document.getElementById('reconnectAutoSaveBtn');
+  const linkBtn = document.getElementById('linkAutoSaveBtn');
+  if(state === 'connected'){
+    dot.style.background = 'var(--green)';
+    text.textContent = 'متصل ✓ — يُحفظ تلقائياً في: ' + fileName;
+    text.style.color = 'var(--text)';
+    reconnectBtn.style.display = 'none';
+    linkBtn.innerHTML = '🔄 ربط ملف آخر';
+  } else if(state === 'needs-reconnect'){
+    dot.style.background = '#F5C043';
+    text.textContent = 'لديك ملف مرتبط سابقاً (' + fileName + ') — اضغط لاستئناف الحفظ';
+    text.style.color = 'var(--text)';
+    reconnectBtn.style.display = 'inline-block';
+  } else if(state === 'unsupported'){
+    dot.style.background = 'var(--red)';
+    text.textContent = 'غير مدعوم في هذا المتصفح — استخدم التصدير اليدوي';
+    document.getElementById('linkAutoSaveBtn').style.display = 'none';
+  } else {
+    dot.style.background = 'var(--muted-2)';
+    text.textContent = 'غير مرتبط بأي ملف بعد';
+    text.style.color = 'var(--muted)';
+    reconnectBtn.style.display = 'none';
+  }
+}
+
+async function writeToAutoSaveFile(){
+  if(!autoSaveFileHandle) return;
+  try{
+    const writable = await autoSaveFileHandle.createWritable();
+    await writable.write(JSON.stringify(trades, null, 2));
+    await writable.close();
+  }catch(e){
+    console.warn('Auto-save write failed:', e);
+  }
+}
+
+async function linkAutoSaveFile(){
+  if(!fsApiSupported) return;
+  try{
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'mr-mahmood-trades.json',
+      types: [{ description:'JSON', accept:{ 'application/json':['.json'] } }],
+    });
+    autoSaveFileHandle = handle;
+    await idbSet('autoSaveHandle', handle);
+    await writeToAutoSaveFile();
+    updateAutoSaveStatus('connected', handle.name);
+    showToast('تم ربط الملف — سيتم الحفظ فيه تلقائياً من الآن');
+  }catch(e){
+    if(e.name !== 'AbortError') console.warn('linkAutoSaveFile failed:', e);
+  }
+}
+
+async function reconnectAutoSaveFile(){
+  const handle = await idbGet('autoSaveHandle');
+  if(!handle) return;
+  try{
+    const perm = await handle.requestPermission({ mode:'readwrite' });
+    if(perm === 'granted'){
+      autoSaveFileHandle = handle;
+      try{
+        const file = await handle.getFile();
+        const text = await file.text();
+        if(text && text.trim()){
+          const parsed = JSON.parse(text);
+          if(Array.isArray(parsed) && parsed.length >= trades.length){
+            trades = parsed;
+            saveTradesToStorage();
+            renderDashboard();
+            renderJournal();
+          }
+        }
+      }catch(e){}
+      updateAutoSaveStatus('connected', handle.name);
+      showToast('تم استئناف الحفظ التلقائي');
+    }
+  }catch(e){ console.warn('reconnectAutoSaveFile failed:', e); }
+}
+
+async function initAutoSaveFile(){
+  if(!fsApiSupported){
+    updateAutoSaveStatus('unsupported');
+    return;
+  }
+  const handle = await idbGet('autoSaveHandle');
+  if(!handle){
+    updateAutoSaveStatus('none');
+    return;
+  }
+  try{
+    const perm = await handle.queryPermission({ mode:'readwrite' });
+    if(perm === 'granted'){
+      autoSaveFileHandle = handle;
+      try{
+        const file = await handle.getFile();
+        const text = await file.text();
+        if(text && text.trim()){
+          const parsed = JSON.parse(text);
+          if(Array.isArray(parsed) && parsed.length >= trades.length){
+            trades = parsed;
+            saveTradesToStorage();
+            renderDashboard();
+            renderJournal();
+          }
+        }
+      }catch(e){}
+      updateAutoSaveStatus('connected', handle.name);
+    } else {
+      updateAutoSaveStatus('needs-reconnect', handle.name);
+    }
+  }catch(e){
+    updateAutoSaveStatus('none');
+  }
+}
+
+function uid(){ return 't' + Math.random().toString(36).slice(2,10); }
+function fmtMoney(n){
+  const sign = n < 0 ? '-' : '+';
+  return sign + '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtMoneyPlain(n){
+  return '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function isoWeekLabel(d){
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(),0,4));
+  const week = 1 + Math.round(((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay()+6)%7)) / 7);
+  return date.getUTCFullYear() + '-W' + String(week).padStart(2,'0');
+}
+function monthLabel(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+document.querySelectorAll('.menu-item[data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.menu-item[data-view]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    if(btn.dataset.view === 'dashboard') renderDashboard();
+    if(btn.dataset.view === 'journal') renderJournal();
+  });
+});
+
+/* =====================================================================
+   POPULATE PAIR DROPDOWNS
+   ===================================================================== */
+function populatePairSelect(sel, includeCustom){
+  sel.innerHTML = '';
+  Object.keys(PAIRS).forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+  if(includeCustom){
+    const opt = document.createElement('option');
+    opt.value = CUSTOM_LABEL; opt.textContent = CUSTOM_LABEL;
+    sel.appendChild(opt);
+  }
+}
+populatePairSelect(document.getElementById('calcPair'), true);
+populatePairSelect(document.getElementById('fPair'), false);
+
+/* =====================================================================
+   CALCULATOR
+   ===================================================================== */
+const calcBalance = document.getElementById('calcBalance');
+const calcRisk = document.getElementById('calcRisk');
+const calcSL = document.getElementById('calcSL');
+const calcTP = document.getElementById('calcTP');
+const calcPair = document.getElementById('calcPair');
+const calcCustomPip = document.getElementById('calcCustomPip');
+const customPipWrap = document.getElementById('customPipWrap');
+
+calcPair.addEventListener('change', ()=>{
+  customPipWrap.style.display = calcPair.value === CUSTOM_LABEL ? 'block' : 'none';
+  runCalculator();
+});
+[calcBalance, calcRisk, calcSL, calcTP, calcCustomPip].forEach(el=>el.addEventListener('input', runCalculator));
+
+function getPipValue(){
+  if(calcPair.value === CUSTOM_LABEL) return parseFloat(calcCustomPip.value) || 0;
+  return PAIRS[calcPair.value] || 0;
+}
+
+function runCalculator(){
+  const balance = parseFloat(calcBalance.value) || 0;
+  const risk = parseFloat(calcRisk.value) || 0;
+  const sl = parseFloat(calcSL.value) || 0;
+  const tp = parseFloat(calcTP.value) || 0;
+  const pipValue = getPipValue();
+
+  const warnBox = document.getElementById('calcWarn');
+  if(sl <= 0 || pipValue <= 0){
+    document.getElementById('resLot').textContent = '0.00';
+    ['resLoss','resProfit','resPct','resRR'].forEach(id=>document.getElementById(id).textContent = '—');
+    document.getElementById('riskGaugeFill').style.width = '0%';
+    document.getElementById('riskGaugeLabel').textContent = '0%';
+    warnBox.style.display = 'none';
+    renderRefTable(balance, risk, pipValue);
+    return;
+  }
+
+  const rawLot = risk / (sl * pipValue);
+  const lot = Math.round(rawLot * 100) / 100;
+  const loss = lot * sl * pipValue;
+  const profit = tp > 0 ? lot * tp * pipValue : null;
+  const pct = balance > 0 ? loss / balance : 0;
+  const rr = (sl > 0 && tp > 0) ? (tp / sl) : null;
+
+  document.getElementById('resLot').textContent = lot > 0 ? lot.toFixed(2) : '< 0.01';
+  document.getElementById('resLoss').textContent = fmtMoneyPlain(loss);
+  document.getElementById('resProfit').textContent = profit !== null ? fmtMoneyPlain(profit) : '—';
+  document.getElementById('resPct').textContent = (pct*100).toFixed(2) + '%';
+  document.getElementById('resRR').textContent = rr !== null ? rr.toFixed(2) + ' : 1' : '—';
+
+  const gaugeWidth = Math.min(pct * 10 * 100, 100);
+  document.getElementById('riskGaugeFill').style.width = gaugeWidth + '%';
+  document.getElementById('riskGaugeLabel').textContent = (pct*100).toFixed(1) + '%';
+
+  if(lot < 0.01){
+    warnBox.style.display = 'block';
+    warnBox.textContent = '⚠ حجم اللوت الناتج أقل من الحد الأدنى المعتاد (0.01) — زد وقف الخسارة أو مبلغ المخاطرة.';
+  } else if(pct > 0.03){
+    warnBox.style.display = 'block';
+    warnBox.textContent = '⚠ نسبة المخاطرة أعلى من 3% من رأس المال — أعلى من الحد الموصى به عادة (1%-2%).';
+  } else {
+    warnBox.style.display = 'none';
+  }
+
+  renderRefTable(balance, risk, pipValue);
+}
+
+function renderRefTable(balance, risk, pipValue){
+  const body = document.getElementById('refTableBody');
+  body.innerHTML = '';
+  if(pipValue <= 0){ return; }
+  [10,15,20,25,30,40,50,75,100].forEach(sl=>{
+    const lot = Math.round((risk/(sl*pipValue))*100)/100;
+    const loss = lot*sl*pipValue;
+    const pct = balance>0 ? (loss/balance*100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${sl}</td><td>${lot.toFixed(2)}</td><td>${fmtMoneyPlain(loss)}</td><td>${pct.toFixed(2)}%</td>`;
+    body.appendChild(tr);
+  });
+}
+runCalculator();
+
+/* =====================================================================
+   TRADE MODAL
+   ===================================================================== */
+const modalOverlay = document.getElementById('modalOverlay');
+const tradeForm = document.getElementById('tradeForm');
+const modalTitle = document.querySelector('#modalOverlay .modal h2');
+const modalSub = document.querySelector('#modalOverlay .modal-sub');
+const modalSubmitBtn = document.querySelector('#modalOverlay .modal-actions button[type="submit"]');
+let editingId = null;
+
+function resetImagePreview(previewId){
+  const el = document.getElementById(previewId);
+  el.src = '';
+  el.style.display = 'none';
+}
+
+function openModal(){
+  editingId = null;
+  tradeForm.reset();
+  document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+  resetImagePreview('fImageBeforePreview');
+  resetImagePreview('fImageAfterPreview');
+  modalTitle.textContent = 'إضافة صفقة جديدة';
+  modalSub.textContent = 'سجّل تفاصيل الصفقة بعد إغلاقها';
+  modalSubmitBtn.textContent = 'حفظ الصفقة';
+  modalOverlay.classList.add('open');
+}
+
+function editTrade(id){
+  const t = trades.find(x=>x.id === id);
+  if(!t) return;
+  editingId = id;
+  document.getElementById('fDate').value = t.date;
+  document.getElementById('fPair').value = t.pair;
+  document.getElementById('fDirection').value = t.direction;
+  document.getElementById('fLot').value = t.lot;
+  document.getElementById('fSL').value = t.sl || '';
+  document.getElementById('fTP').value = t.tp || '';
+  document.getElementById('fResult').value = t.result;
+  document.getElementById('fPL').value = t.pl;
+  document.getElementById('fComment').value = t.comment || '';
+
+  const beforePrev = document.getElementById('fImageBeforePreview');
+  const afterPrev = document.getElementById('fImageAfterPreview');
+  if(t.imageBefore){ beforePrev.src = t.imageBefore; beforePrev.style.display = 'block'; } else { resetImagePreview('fImageBeforePreview'); }
+  if(t.imageAfter){ afterPrev.src = t.imageAfter; afterPrev.style.display = 'block'; } else { resetImagePreview('fImageAfterPreview'); }
+
+  modalTitle.textContent = 'تعديل الصفقة';
+  modalSub.textContent = 'عدّل تفاصيل الصفقة ثم احفظ التغييرات';
+  modalSubmitBtn.textContent = 'حفظ التعديلات';
+  modalOverlay.classList.add('open');
+}
+
+function closeModal(){ modalOverlay.classList.remove('open'); }
+
+document.getElementById('quickAddBtn').addEventListener('click', openModal);
+document.getElementById('addTradeBtn').addEventListener('click', openModal);
+document.getElementById('cancelModal').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) closeModal(); });
+
+function wireImageInput(inputId, previewId){
+  document.getElementById(inputId).addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const preview = document.getElementById(previewId);
+      preview.src = reader.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+wireImageInput('fImageBefore', 'fImageBeforePreview');
+wireImageInput('fImageAfter', 'fImageAfterPreview');
+
+tradeForm.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const beforePrev = document.getElementById('fImageBeforePreview');
+  const afterPrev = document.getElementById('fImageAfterPreview');
+  const trade = {
+    id: editingId || uid(),
+    date: document.getElementById('fDate').value,
+    pair: document.getElementById('fPair').value,
+    direction: document.getElementById('fDirection').value,
+    lot: parseFloat(document.getElementById('fLot').value) || 0,
+    sl: parseFloat(document.getElementById('fSL').value) || 0,
+    tp: parseFloat(document.getElementById('fTP').value) || 0,
+    result: document.getElementById('fResult').value,
+    pl: parseFloat(document.getElementById('fPL').value) || 0,
+    comment: document.getElementById('fComment').value.trim(),
+    imageBefore: beforePrev.style.display === 'block' ? beforePrev.src : null,
+    imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
+  };
+
+  if(editingId){
+    const idx = trades.findIndex(t=>t.id === editingId);
+    if(idx !== -1) trades[idx] = trade;
+    showToast('تم حفظ التعديلات بنجاح');
+  } else {
+    trades.push(trade);
+    showToast('تم حفظ الصفقة بنجاح');
+  }
+  trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
+  saveTradesToStorage();
+  writeToAutoSaveFile();
+  closeModal();
+  renderDashboard();
+  renderJournal();
+});
+
+function deleteTrade(id){
+  trades = trades.filter(t=>t.id !== id);
+  saveTradesToStorage();
+  writeToAutoSaveFile();
+  renderDashboard();
+  renderJournal();
+  showToast('تم حذف الصفقة');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* =====================================================================
+   STATS
+   ===================================================================== */
+function computeStats(list){
+  const total = list.length;
+  const wins = list.filter(t=>t.result==='رابحة');
+  const losses = list.filter(t=>t.result==='خاسرة');
+  const be = list.filter(t=>t.result==='متعادلة');
+  const netPL = list.reduce((s,t)=>s+t.pl,0);
+  const grossWin = wins.reduce((s,t)=>s+Math.max(t.pl,0),0);
+  const grossLoss = Math.abs(losses.reduce((s,t)=>s+Math.min(t.pl,0),0));
+  const profitFactor = grossLoss > 0 ? grossWin/grossLoss : (grossWin>0 ? Infinity : 0);
+  const winRate = total>0 ? wins.length/total : 0;
+  const best = list.reduce((m,t)=> t.pl>(m? m.pl:-Infinity) ? t : m, null);
+  const worst = list.reduce((m,t)=> t.pl<(m? m.pl:Infinity) ? t : m, null);
+  return {total, wins, losses, be, netPL, profitFactor, winRate, best, worst};
+}
+function periodFilter(list, days){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days);
+  return list.filter(t=> new Date(t.date) >= cutoff);
+}
+
+/* =====================================================================
+   DASHBOARD RENDER
+   ===================================================================== */
+function renderDashboard(){
+  const stats = computeStats(trades);
+
+  document.getElementById('statWinRate').textContent = trades.length ? (stats.winRate*100).toFixed(1)+'%' : '—';
+  document.getElementById('statNetPL').textContent = trades.length ? fmtMoney(stats.netPL) : '—';
+  document.getElementById('statPF').textContent = trades.length ? (stats.profitFactor===Infinity ? '∞' : stats.profitFactor.toFixed(2)) : '—';
+  document.getElementById('statTotal').textContent = trades.length ? String(stats.total) : '0';
+
+  const d1 = computeStats(periodFilter(trades,1));
+  const w1 = computeStats(periodFilter(trades,7));
+  const m1 = computeStats(periodFilter(trades,30));
+  const deltaPill = (v, isPct)=>{
+    if(v===0 || !isFinite(v)) return `<span class="pill flat">0${isPct?'%':''}</span>`;
+    const cls = v>0 ? 'up':'down';
+    const val = isPct ? (v*100).toFixed(1)+'%' : fmtMoney(v);
+    return `<span class="pill ${cls}">${val}</span>`;
+  };
+  document.getElementById('statWinRateDelta').innerHTML =
+    `${deltaPill(d1.winRate,true)}<span class="period">1D</span> ${deltaPill(w1.winRate,true)}<span class="period">1W</span> ${deltaPill(m1.winRate,true)}<span class="period">1M</span>`;
+  document.getElementById('statNetPLDelta').innerHTML =
+    `${deltaPill(d1.netPL)}<span class="period">1D</span> ${deltaPill(w1.netPL)}<span class="period">1W</span> ${deltaPill(m1.netPL)}<span class="period">1M</span>`;
+  document.getElementById('statPFDelta').innerHTML =
+    `<span class="pill flat">${d1.total} صفقة</span><span class="period">1D</span> <span class="pill flat">${w1.total}</span><span class="period">1W</span> <span class="pill flat">${m1.total}</span><span class="period">1M</span>`;
+  document.getElementById('statTotalDelta').innerHTML =
+    `<span class="pill flat">+${d1.total}</span><span class="period">1D</span> <span class="pill flat">+${w1.total}</span><span class="period">1W</span> <span class="pill flat">+${m1.total}</span><span class="period">1M</span>`;
+
+  // gauge
+  const winPct = trades.length ? stats.winRate*100 : 0;
+  document.getElementById('gaugePct').textContent = winPct.toFixed(0)+'%';
+  document.getElementById('gaugeLbl').textContent = `إجمالي ${trades.length} صفقة`;
+
+  // performance donut
+  document.getElementById('perfCenter').textContent = `${stats.wins.length}/${stats.total}`;
+  document.getElementById('bestTrade').textContent = stats.best ? fmtMoney(stats.best.pl) : '—';
+  document.getElementById('worstTrade').textContent = stats.worst ? fmtMoney(stats.worst.pl) : '—';
+
+  renderCharts(stats);
+  renderRecentTrades();
+  renderCalendar();
+}
+
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function hexToRgba(hex, alpha){
+  hex = hex.replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function renderCharts(stats){
+  const cPurpleSoft = cssVar('--purple-soft');
+  const cMuted2 = cssVar('--muted-2');
+  const cBorder = cssVar('--border');
+  const cCard2 = cssVar('--card-2');
+  const cMuted = cssVar('--muted');
+  const cText = cssVar('--text');
+  const cGreen = cssVar('--green');
+  const cRed = cssVar('--red');
+  const cTeal = cssVar('--teal');
+  const cPink = cssVar('--pink');
+
+  // equity curve
+  const sorted = [...trades].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  let cum = 0;
+  const points = sorted.map(t=>{ cum += t.pl; return cum; });
+  const labels = sorted.map(t=> t.date.slice(5));
+  const eqData = trades.length ? [0, ...points] : [0];
+  const eqLabels = trades.length ? ['', ...labels] : [''];
+
+  const eqCanvas = document.getElementById('equityChart');
+  const ctx = eqCanvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0,0,0,210);
+  gradient.addColorStop(0, hexToRgba(cPurpleSoft, 0.35));
+  gradient.addColorStop(1, hexToRgba(cPurpleSoft, 0));
+
+  if(charts.equity) charts.equity.destroy();
+  charts.equity = new Chart(ctx, {
+    type:'line',
+    data:{ labels: eqLabels, datasets:[{ data: eqData, borderColor:cPurpleSoft, backgroundColor:gradient,
+      borderWidth:2.5, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:cPurpleSoft, tension:0.4, fill:true }]},
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{intersect:false,mode:'index'},
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:cCard2, borderColor:cBorder, borderWidth:1,
+        titleColor:cMuted, bodyColor:cText, padding:10, displayColors:false,
+        callbacks:{ label:(c)=>fmtMoneyPlain(c.parsed.y) } } },
+      scales:{ x:{ ticks:{color:cMuted2, font:{size:10}, maxTicksLimit:7}, grid:{display:false}, border:{color:cBorder} },
+                y:{ ticks:{color:cMuted2, font:{size:10}, callback:(v)=>'$'+v}, grid:{color:hexToRgba(cBorder,0.6)}, border:{display:false} } }
+    }
+  });
+
+  // gauge
+  const winPct = stats.total ? stats.winRate*100 : 0;
+  if(charts.gauge) charts.gauge.destroy();
+  charts.gauge = new Chart(document.getElementById('gaugeChart'), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[winPct||0.001, 100-(winPct||0.001)], backgroundColor:[cGreen,cRed], borderWidth:0, circumference:180, rotation:270, cutout:'75%' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{enabled:false}} }
+  });
+
+  // performance donut
+  const wins = stats.wins.length, losses = stats.losses.length;
+  const perfData = (wins+losses)>0 ? [wins,losses] : [1,1];
+  if(charts.perf) charts.perf.destroy();
+  charts.perf = new Chart(document.getElementById('perfChart'), {
+    type:'doughnut',
+    data:{ labels:['رابحة','خاسرة'], datasets:[{ data:perfData, backgroundColor:[cTeal,cPink], borderWidth:0, cutout:'72%' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},
+      tooltip:{ backgroundColor:cCard2, borderColor:cBorder, borderWidth:1, titleColor:cMuted, bodyColor:cText, padding:8, displayColors:false } } }
+  });
+}
+
+function pairFlag(pair){ return pair.replace(/\(.*?\)/,'').split('/').map(s=>s[0]).join('').slice(0,2); }
+function resultBadge(result){
+  const cls = result==='رابحة' ? 'win' : result==='خاسرة' ? 'loss' : 'be';
+  return `<span class="badge ${cls}">${result}</span>`;
+}
+function directionBadge(dir){
+  return `<span class="badge ${dir==='شراء'?'buy':'sell'}">${dir}</span>`;
+}
+
+function renderRecentTrades(){
+  const wrap = document.getElementById('recentTradesWrap');
+  const recent = [...trades].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,6);
+  if(!recent.length){
+    wrap.innerHTML = '<div class="empty-state">لا توجد صفقات بعد — أضف أول صفقة لتظهر هنا</div>';
+    return;
+  }
+  let html = `<table><thead><tr><th>الزوج</th><th>النوع</th><th>التاريخ</th><th style="text-align:left">الربح/الخسارة</th></tr></thead><tbody>`;
+  recent.forEach(t=>{
+    html += `<tr>
+      <td class="pair-cell"><span class="pair-flag">${pairFlag(t.pair)}</span>${t.pair}</td>
+      <td>${directionBadge(t.direction)}</td>
+      <td>${t.date}</td>
+      <td class="mono-cell" style="color:${t.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(t.pl)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const dayPL = {};
+  trades.forEach(t=>{
+    const d = new Date(t.date);
+    if(d.getFullYear()===year && d.getMonth()===month){
+      dayPL[d.getDate()] = (dayPL[d.getDate()]||0) + t.pl;
+    }
+  });
+
+  for(let d=1; d<=daysInMonth; d++){
+    const div = document.createElement('div');
+    let cls = 'cal-day';
+    if(dayPL[d] > 0) cls += ' win';
+    else if(dayPL[d] < 0) cls += ' loss';
+    div.className = cls;
+    div.textContent = d;
+    grid.appendChild(div);
+  }
+}
+
+/* =====================================================================
+   JOURNAL RENDER
+   ===================================================================== */
+document.getElementById('filterPeriod').addEventListener('change', renderJournal);
+document.getElementById('filterResult').addEventListener('change', renderJournal);
+
+function getFilteredTrades(){
+  let list = [...trades];
+  const period = document.getElementById('filterPeriod').value;
+  const result = document.getElementById('filterResult').value;
+  if(period==='week') list = periodFilter(list,7);
+  if(period==='month') list = periodFilter(list,30);
+  if(result==='win') list = list.filter(t=>t.result==='رابحة');
+  if(result==='loss') list = list.filter(t=>t.result==='خاسرة');
+  if(result==='be') list = list.filter(t=>t.result==='متعادلة');
+  return list.sort((a,b)=> new Date(b.date)-new Date(a.date));
+}
+
+function renderJournal(){
+  const list = getFilteredTrades();
+  const body = document.getElementById('journalBody');
+  const empty = document.getElementById('journalEmpty');
+  body.innerHTML = '';
+  empty.style.display = list.length ? 'none' : 'block';
+
+  list.forEach(t=>{
+    const d = new Date(t.date);
+    const week = isoWeekLabel(d);
+    const month = monthLabel(d);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono-cell">${t.date}</td>
+      <td class="mono-cell">${week}</td>
+      <td class="mono-cell">${month}</td>
+      <td>${t.pair}</td>
+      <td>${directionBadge(t.direction)}</td>
+      <td class="mono-cell">${t.lot.toFixed(2)}</td>
+      <td class="mono-cell">${t.sl||'—'}</td>
+      <td class="mono-cell">${t.tp||'—'}</td>
+      <td>${resultBadge(t.result)}</td>
+      <td class="mono-cell" style="color:${t.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(t.pl)}</td>
+      <td class="comment-cell">${t.comment ? t.comment : '—'}</td>
+      <td>${t.imageBefore ? `<img src="${t.imageBefore}" class="thumb" onclick="window.open('${t.imageBefore}')" title="صورة الدخول">` : '—'}</td>
+      <td>${t.imageAfter ? `<img src="${t.imageAfter}" class="thumb" onclick="window.open('${t.imageAfter}')" title="صورة الخروج">` : '—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn-edit" onclick="editTrade('${t.id}')">تعديل</button>
+          <button class="btn-danger" onclick="deleteTrade('${t.id}')">حذف</button>
+        </div>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+
+  renderPeriodTables();
+}
+
+function renderPeriodTables(){
+  const weeklyMap = {}, monthlyMap = {};
+  trades.forEach(t=>{
+    const d = new Date(t.date);
+    const w = isoWeekLabel(d), m = monthLabel(d);
+    weeklyMap[w] = weeklyMap[w] || [];
+    weeklyMap[w].push(t);
+    monthlyMap[m] = monthlyMap[m] || [];
+    monthlyMap[m].push(t);
+  });
+
+  const buildRows = (map, tbodyId)=>{
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+    const keys = Object.keys(map).sort();
+    if(!keys.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد بيانات بعد</td></tr>';
+      return;
+    }
+    keys.forEach(k=>{
+      const list = map[k];
+      const s = computeStats(list);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono-cell">${k}</td><td class="mono-cell">${s.total}</td>
+        <td class="mono-cell" style="color:var(--green)">${s.wins.length}</td>
+        <td class="mono-cell" style="color:var(--red)">${s.losses.length}</td>
+        <td class="mono-cell">${(s.winRate*100).toFixed(1)}%</td>
+        <td class="mono-cell" style="color:${s.netPL>=0?'var(--green)':'var(--red)'}">${fmtMoney(s.netPL)}</td>`;
+      tbody.appendChild(tr);
+    });
+  };
+  buildRows(weeklyMap, 'weeklyBody');
+  buildRows(monthlyMap, 'monthlyBody');
+}
+
+/* =====================================================================
+   EXPORT / IMPORT
+   ===================================================================== */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(trades, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'mr-mahmood-trades-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('تم تصدير البيانات');
+});
+
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(Array.isArray(data)){
+        trades = data;
+        saveTradesToStorage();
+        writeToAutoSaveFile();
+        renderDashboard();
+        renderJournal();
+        showToast('تم استيراد ' + data.length + ' صفقة');
+      }
+    }catch(err){
+      showToast('تعذّر قراءة الملف — تأكد أنه ملف JSON صحيح');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* =====================================================================
+   THEMES
+   ===================================================================== */
+let currentTheme = 'dark';
+let lastDarkTheme = 'dark';
+
+const moonIcon = '<path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/>';
+const sunIcon = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+
+function applyTheme(name, skipSave){
+  currentTheme = name;
+  if(name !== 'light') lastDarkTheme = name;
+  document.documentElement.setAttribute('data-theme', name);
+  if(!skipSave) saveThemeToStorage(name);
+
+  document.querySelectorAll('.theme-card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.theme === name);
+  });
+
+  const icon = document.getElementById('quickToggleIcon');
+  const label = document.getElementById('quickToggleLabel');
+  if(name === 'light'){
+    icon.innerHTML = sunIcon;
+    label.textContent = 'التبديل للوضع الليلي';
+  } else {
+    icon.innerHTML = moonIcon;
+    label.textContent = 'التبديل للوضع النهاري';
+  }
+
+  if(document.getElementById('view-dashboard').classList.contains('active')){
+    renderDashboard();
+  }
+}
+
+document.querySelectorAll('.theme-card').forEach(card=>{
+  card.addEventListener('click', ()=> applyTheme(card.dataset.theme));
+});
+
+document.getElementById('quickThemeToggle').addEventListener('click', ()=>{
+  applyTheme(currentTheme === 'light' ? lastDarkTheme : 'light');
+});
+
+document.getElementById('linkAutoSaveBtn').addEventListener('click', linkAutoSaveFile);
+document.getElementById('reconnectAutoSaveBtn').addEventListener('click', reconnectAutoSaveFile);
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+loadTradesFromStorage();
+const savedTheme = loadThemeFromStorage();
+applyTheme(savedTheme || 'dark', true);
+renderDashboard();
+renderJournal();
+initAutoSaveFile();
+const storageNoteEl = document.getElementById('storageNote');
+const aboutStorageEl = document.getElementById('aboutStorageText');
+if(storageAvailable){
+  storageNoteEl.textContent = 'الحفظ التلقائي مفعّل ✓ — بياناتك وثيمك محفوظان على هذا الجهاز حتى لو أغلقت الصفحة. للحفظ الأكثر ضماناً، اربط ملفاً فعلياً من صفحة الإعدادات.';
+  aboutStorageEl.textContent = 'MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي. الحفظ التلقائي مفعّل على هذا الجهاز؛ ولمزيد من الضمان يمكنك ربط ملف حفظ فعلي من صفحة الإعدادات.';
+  if(trades.length){ showToast('تم استرجاع ' + trades.length + ' صفقة محفوظة'); }
+} else {
+  storageNoteEl.textContent = 'الحفظ التلقائي غير متاح في هذه البيئة. بياناتك محفوظة في هذه الجلسة فقط — استخدم "تصدير" قبل إغلاق الصفحة، أو اربط ملف حفظ تلقائي من صفحة الإعدادات (Chrome/Edge).';
+  aboutStorageEl.textContent = 'MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي. الحفظ التلقائي عبر المتصفح غير متاح في هذه البيئة؛ يُنصح بربط ملف حفظ تلقائي من صفحة الإعدادات، أو استخدام "تصدير البيانات" يدوياً.';
+}
+
+// Register the service worker so the app can be installed and work offline.
+// Only works when served over https:// or http://localhost — silently does
+// nothing if opened directly as a file:// page.
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+
+// Native "Install app" prompt (Android Chrome / Windows Edge & Chrome).
+let deferredInstallPrompt = null;
+const installSection = document.getElementById('installAppSection');
+const installBtn = document.getElementById('installAppBtn');
+
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installSection) installSection.style.display = 'block';
+});
+
+if(installBtn){
+  installBtn.addEventListener('click', async ()=>{
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installSection.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', ()=>{
+  showToast('تم تثبيت التطبيق بنجاح 🎉');
+  if(installSection) installSection.style.display = 'none';
+  deferredInstallPrompt = null;
+});
+</script>
+</body>
+</html>
