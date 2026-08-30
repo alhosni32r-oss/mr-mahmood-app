@@ -4624,7 +4624,11 @@ if(cloudSyncConfigured){
   try{
     firebase.initializeApp(firebaseConfig);
     cloudAuth = firebase.auth();
-    cloudDb = firebase.firestore();
+    // This project's Firestore database was created with a custom database
+    // ID ("me-central1", matching its region) instead of the default "(default)"
+    // ID, so it must be targeted explicitly — firebase.firestore() alone
+    // would look for a database literally named "(default)" and fail.
+    cloudDb = firebase.firestore(firebase.app(), 'me-central1');
 
     cloudAuth.onAuthStateChanged((user)=>{
       cloudUser = user;
