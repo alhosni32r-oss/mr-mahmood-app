@@ -36,11 +36,11 @@
      SDK for Authentication. Exposes what's needed on window so the rest of
      the app's plain script code can call it as if it were compat syntax. -->
 <script type="module">
-  import { getApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import {
     getFirestore, doc, setDoc, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-  window.__fsModular = { getApp, getFirestore, doc, setDoc, onSnapshot, serverTimestamp };
+  window.__fsModular = { initializeApp, getFirestore, doc, setDoc, onSnapshot, serverTimestamp };
 </script>
 <style>
   :root{
@@ -1393,7 +1393,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-modular-firestore-v4
+        Build: 2026-08-31-modular-firestore-v5
       </div>
     </div>
   </section>
@@ -4674,15 +4674,23 @@ if(cloudSyncConfigured){
       return;
     }
     try{
+      // Two SEPARATE Firebase app instances are initialized here on
+      // purpose: the compat SDK (firebase.initializeApp) for Auth, since
+      // that has been reliable, and the modular SDK's own initializeApp
+      // for Firestore — they do NOT share the same internal app registry
+      // even at the identical version number, so modular getApp() cannot
+      // see an app that only the compat SDK created (confirmed by testing:
+      // that mismatch was the actual cause of "No Firebase App [DEFAULT]"
+      // errors here).
       firebase.initializeApp(firebaseConfig);
       cloudAuth = firebase.auth();
+      const modularApp = window.__fsModular.initializeApp(firebaseConfig);
       // This project's Firestore database was created with a custom
       // database ID ("me-central1", matching its region) instead of the
       // default "(default)" ID. The compat SDK's firebase.firestore(app,id)
       // silently IGNORES the id and always falls back to "(default)" — this
       // is a confirmed compat SDK limitation, not a typo — so we use the
       // modular getFirestore(app, id), which does honor it correctly.
-      const modularApp = window.__fsModular.getApp();
       cloudDb = window.__fsModular.getFirestore(modularApp, 'me-central1');
 
       cloudAuth.onAuthStateChanged((user)=>{
