@@ -1405,7 +1405,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-full-modular-v6
+        Build: 2026-08-31-reconnect-fix-v7
       </div>
     </div>
   </section>
@@ -4673,6 +4673,21 @@ function startCloudSync(uid){
 function stopCloudSync(){
   if(cloudUnsubscribe){ cloudUnsubscribe(); cloudUnsubscribe = null; }
 }
+
+// Defensive reconnection: on mobile especially, a backgrounded tab/app can
+// have its network activity suspended by the OS while offline, and simply
+// restoring WiFi doesn't always reliably "wake" an existing Firestore
+// listener on its own. Restarting the listener whenever the app comes back
+// online or back into view guarantees a fresh pull of the latest data
+// instead of silently relying on the SDK's own reconnection timing.
+window.addEventListener('online', ()=>{
+  if(cloudUser && cloudDb) startCloudSync(cloudUser.uid);
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && cloudUser && cloudDb){
+    startCloudSync(cloudUser.uid);
+  }
+});
 
 if(cloudSyncConfigured){
   // The modular Firestore functions are exposed asynchronously by a
