@@ -26,6 +26,22 @@
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+
+<!-- The compat Firestore SDK above does NOT reliably support named (non-
+     "(default)") databases — it silently falls back to "(default)" instead
+     of throwing, which is why our named database ("me-central1") kept
+     failing invisibly. Only the modern modular SDK's getFirestore(app, id)
+     is confirmed to actually honor a database ID, so we load it here for
+     Firestore specifically, while continuing to use the (working) compat
+     SDK for Authentication. Exposes what's needed on window so the rest of
+     the app's plain script code can call it as if it were compat syntax. -->
+<script type="module">
+  import { getApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import {
+    getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  window.__fsModular = { getApp, getFirestore, doc, setDoc, onSnapshot, serverTimestamp };
+</script>
 <style>
   :root{
     --bg: #0A0A0F;
@@ -1377,7 +1393,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-cloudsync-v3
+        Build: 2026-08-31-modular-firestore-v4
       </div>
     </div>
   </section>
@@ -4583,15 +4599,16 @@ async function pushToCloud(){
     return;
   }
   if(isApplyingRemoteUpdate) return;
-  if(!cloudUser || !cloudDb){
+  if(!cloudUser || !cloudDb || !window.__fsModular){
     console.warn('pushToCloud skipped: no active session (cloudUser is null)');
     showToast(t('cloud.sessionLost'));
     updateCloudUI();
     return;
   }
   try{
-    await cloudDb.collection('users').doc(cloudUser.uid).collection('data').doc('main')
-      .set({ accounts, activeAccountId, notes, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    const { doc, setDoc, serverTimestamp } = window.__fsModular;
+    const docRef = doc(cloudDb, 'users', cloudUser.uid, 'data', 'main');
+    await setDoc(docRef, { accounts, activeAccountId, notes, updatedAt: serverTimestamp() });
   }catch(e){
     console.warn('Cloud push failed:', e);
     showToast(t('cloud.pushFailed'));
@@ -4621,11 +4638,14 @@ function applyCloudSnapshot(data){
 
 function startCloudSync(uid){
   if(cloudUnsubscribe) cloudUnsubscribe();
-  const docRef = cloudDb.collection('users').doc(uid).collection('data').doc('main');
+  const { doc, onSnapshot } = window.__fsModular;
+  const docRef = doc(cloudDb, 'users', uid, 'data', 'main');
   let firstSnapshot = true;
-  cloudUnsubscribe = docRef.onSnapshot((doc)=>{
-    if(doc.exists){
-      applyCloudSnapshot(doc.data());
+  // Note: modular Firestore's exists is a METHOD (snap.exists()), unlike
+  // the compat SDK where it was a plain property (snap.exists).
+  cloudUnsubscribe = onSnapshot(docRef, (snap)=>{
+    if(snap.exists()){
+      applyCloudSnapshot(snap.data());
       if(!firstSnapshot) showToast(t('cloud.synced'));
     } else if(firstSnapshot){
       // Brand-new account with no cloud data yet — seed it with whatever
@@ -4643,27 +4663,42 @@ function stopCloudSync(){
 }
 
 if(cloudSyncConfigured){
-  try{
-    firebase.initializeApp(firebaseConfig);
-    cloudAuth = firebase.auth();
-    // This project's Firestore database was created with a custom database
-    // ID ("me-central1", matching its region) instead of the default "(default)"
-    // ID, so it must be targeted explicitly — firebase.firestore() alone
-    // would look for a database literally named "(default)" and fail.
-    cloudDb = firebase.firestore(firebase.app(), 'me-central1');
+  // The modular Firestore functions are exposed asynchronously by a
+  // <script type="module"> tag (module scripts always run after classic
+  // scripts, even ones positioned later in the document) — so we wait
+  // for window.__fsModular to actually exist before using it, instead of
+  // assuming it's already there.
+  function initCloudSyncWhenModularReady(){
+    if(!window.__fsModular){
+      setTimeout(initCloudSyncWhenModularReady, 30);
+      return;
+    }
+    try{
+      firebase.initializeApp(firebaseConfig);
+      cloudAuth = firebase.auth();
+      // This project's Firestore database was created with a custom
+      // database ID ("me-central1", matching its region) instead of the
+      // default "(default)" ID. The compat SDK's firebase.firestore(app,id)
+      // silently IGNORES the id and always falls back to "(default)" — this
+      // is a confirmed compat SDK limitation, not a typo — so we use the
+      // modular getFirestore(app, id), which does honor it correctly.
+      const modularApp = window.__fsModular.getApp();
+      cloudDb = window.__fsModular.getFirestore(modularApp, 'me-central1');
 
-    cloudAuth.onAuthStateChanged((user)=>{
-      cloudUser = user;
-      updateCloudUI();
-      if(user){
-        startCloudSync(user.uid);
-      } else {
-        stopCloudSync();
-      }
-    });
-  }catch(e){
-    console.warn('Cloud sync init failed:', e);
+      cloudAuth.onAuthStateChanged((user)=>{
+        cloudUser = user;
+        updateCloudUI();
+        if(user){
+          startCloudSync(user.uid);
+        } else {
+          stopCloudSync();
+        }
+      });
+    }catch(e){
+      console.warn('Cloud sync init failed:', e);
+    }
   }
+  initCloudSyncWhenModularReady();
 }
 updateCloudUI();
 
