@@ -1663,6 +1663,7 @@ const TRANSLATIONS = {
     'cloud.synced': '☁️ تم استلام تحديث من جهاز آخر',
     'cloud.sessionLost': '⚠️ انقطعت جلسة المزامنة السحابية — سجّل دخولك مجدداً من الإعدادات لمتابعة الحفظ التلقائي',
     'cloud.pushFailed': '⚠️ فشلت مزامنة آخر تغيير مع السحابة — تحقق من الاتصال بالإنترنت',
+    'cloud.notConfiguredWarning': '⚠️ هذا الجهاز يشغّل نسخة قديمة من التطبيق — أعد فتح الرابط من جديد بالكامل',
     'cloud.errInvalidEmail': 'البريد الإلكتروني غير صحيح', 'cloud.errUserNotFound': 'لا يوجد حساب بهذا البريد',
     'cloud.errWrongPassword': 'كلمة المرور غير صحيحة', 'cloud.errEmailInUse': 'هذا البريد مستخدم بالفعل — سجّل الدخول بدلاً من إنشاء حساب جديد',
     'cloud.errWeakInput': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'cloud.errGeneric': 'حدث خطأ — حاول مجدداً',
@@ -1857,6 +1858,7 @@ const TRANSLATIONS = {
     'cloud.synced': '☁️ Update received from another device',
     'cloud.sessionLost': '⚠️ Cloud sync session lost — log in again from Settings to resume automatic saving',
     'cloud.pushFailed': '⚠️ Failed to sync the last change to the cloud — check your internet connection',
+    'cloud.notConfiguredWarning': '⚠️ This device is running an old version of the app — fully reopen the link',
     'cloud.errInvalidEmail': 'Invalid email address', 'cloud.errUserNotFound': 'No account found with this email',
     'cloud.errWrongPassword': 'Incorrect password', 'cloud.errEmailInUse': 'This email is already in use — log in instead of signing up',
     'cloud.errWeakInput': 'Password must be at least 6 characters', 'cloud.errGeneric': 'Something went wrong — please try again',
@@ -4568,25 +4570,25 @@ function updateCloudUI(){
 }
 
 // Pushes the current local state (accounts + notes) up to this user's
-// Firestore document. Warns visibly (once per "session drop") instead of
-// silently no-op'ing when not logged in — this was a real source of
-// confusion: earlier versions failed silently here, making it look like
+// Firestore document. Warns visibly every time it's skipped due to a lost
+// session — earlier versions failed silently here, making it look like
 // sync was broken when actually the login session had just expired.
-let cloudSessionLostWarned = false;
 async function pushToCloud(){
-  if(!cloudSyncConfigured || isApplyingRemoteUpdate) return;
+  if(!cloudSyncConfigured){
+    console.warn('pushToCloud skipped: cloud sync not configured');
+    showToast(t('cloud.notConfiguredWarning'));
+    return;
+  }
+  if(isApplyingRemoteUpdate) return;
   if(!cloudUser || !cloudDb){
-    if(!cloudSessionLostWarned){
-      cloudSessionLostWarned = true;
-      showToast(t('cloud.sessionLost'));
-      updateCloudUI();
-    }
+    console.warn('pushToCloud skipped: no active session (cloudUser is null)');
+    showToast(t('cloud.sessionLost'));
+    updateCloudUI();
     return;
   }
   try{
     await cloudDb.collection('users').doc(cloudUser.uid).collection('data').doc('main')
       .set({ accounts, activeAccountId, notes, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    cloudSessionLostWarned = false;
   }catch(e){
     console.warn('Cloud push failed:', e);
     showToast(t('cloud.pushFailed'));
@@ -4651,7 +4653,6 @@ if(cloudSyncConfigured){
       cloudUser = user;
       updateCloudUI();
       if(user){
-        cloudSessionLostWarned = false;
         startCloudSync(user.uid);
       } else {
         stopCloudSync();
