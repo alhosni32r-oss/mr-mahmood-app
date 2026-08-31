@@ -43,14 +43,14 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-    createUserWithEmailAndPassword, signOut
+    createUserWithEmailAndPassword, signOut, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
     getFirestore, doc, setDoc, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   window.__fsModular = {
     initializeApp,
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail,
     getFirestore, doc, setDoc, onSnapshot, serverTimestamp,
   };
 </script>
@@ -1394,6 +1394,7 @@
           <button type="submit" class="btn-primary" id="cloudLoginBtn" data-i18n="cloud.login" style="padding:9px 18px; font-size:13px;">تسجيل الدخول</button>
           <button type="button" class="btn-ghost" id="cloudSignupBtn" data-i18n="cloud.signup" style="padding:9px 18px; font-size:13px;">إنشاء حساب جديد</button>
         </div>
+        <button type="button" id="cloudForgotPasswordBtn" data-i18n="cloud.forgotPassword" style="margin-top:10px; background:none; border:none; color:var(--purple-soft); font-size:12px; cursor:pointer; padding:0; text-decoration:underline;">نسيت كلمة المرور؟</button>
       </form>
 
       <div class="settings-sub" id="cloudConfigNote" style="margin-top:12px; margin-bottom:0; color:var(--red);"></div>
@@ -1405,7 +1406,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-reconnect-fix-v7
+        Build: 2026-08-31-safety-features-v9
       </div>
     </div>
   </section>
@@ -1672,6 +1673,7 @@ const TRANSLATIONS = {
     'journal.editTitle': 'تعديل الصفقة', 'journal.editSub': 'عدّل تفاصيل الصفقة ثم احفظ التغييرات', 'journal.saveEdit': 'حفظ التعديلات',
     'journal.addTitle': 'إضافة صفقة جديدة', 'journal.addSub': 'سجّل تفاصيل الصفقة بعد إغلاقها',
     'journal.edit': 'تعديل', 'journal.delete': 'حذف',
+    'journal.confirmDelete': 'سيتم حذف هذه الصفقة نهائياً من سجلك. هل أنت متأكد؟',
 
     'modal.date': 'التاريخ', 'modal.direction': 'نوع الصفقة', 'modal.buy': 'شراء', 'modal.sell': 'بيع',
     'modal.lot': 'حجم اللوت', 'modal.result': 'النتيجة', 'modal.win': 'رابحة', 'modal.loss': 'خاسرة',
@@ -1691,6 +1693,8 @@ const TRANSLATIONS = {
     'cloud.notConfigured': '⚠ المزامنة السحابية غير مُفعّلة بعد لهذا التطبيق — تحتاج إعداد Firebase أولاً.',
     'cloud.loginSuccess': 'تم تسجيل الدخول بنجاح', 'cloud.signupSuccess': 'تم إنشاء الحساب بنجاح',
     'cloud.loggedOut': 'تم تسجيل الخروج',
+    'cloud.forgotPassword': 'نسيت كلمة المرور؟',
+    'cloud.resetEmailSent': '📧 أُرسل رابط إعادة تعيين كلمة المرور إلى بريدك — تحقق من صندوق الوارد (وصندوق الرسائل غير المرغوبة)',
     'cloud.synced': '☁️ تم استلام تحديث من جهاز آخر',
     'cloud.sessionLost': '⚠️ انقطعت جلسة المزامنة السحابية — سجّل دخولك مجدداً من الإعدادات لمتابعة الحفظ التلقائي',
     'cloud.pushFailed': '⚠️ فشلت مزامنة آخر تغيير مع السحابة — تحقق من الاتصال بالإنترنت',
@@ -1867,6 +1871,7 @@ const TRANSLATIONS = {
     'journal.editTitle': 'Edit Trade', 'journal.editSub': 'Edit the trade details then save your changes', 'journal.saveEdit': 'Save Changes',
     'journal.addTitle': 'Add New Trade', 'journal.addSub': 'Log the trade details after closing it',
     'journal.edit': 'Edit', 'journal.delete': 'Delete',
+    'journal.confirmDelete': 'This trade will be permanently deleted from your journal. Are you sure?',
 
     'modal.date': 'Date', 'modal.direction': 'Trade Type', 'modal.buy': 'Buy', 'modal.sell': 'Sell',
     'modal.lot': 'Lot Size', 'modal.result': 'Result', 'modal.win': 'Win', 'modal.loss': 'Loss',
@@ -1886,6 +1891,8 @@ const TRANSLATIONS = {
     'cloud.notConfigured': '⚠ Cloud sync isn\'t set up for this app yet — Firebase needs to be configured first.',
     'cloud.loginSuccess': 'Logged in successfully', 'cloud.signupSuccess': 'Account created successfully',
     'cloud.loggedOut': 'Logged out',
+    'cloud.forgotPassword': 'Forgot your password?',
+    'cloud.resetEmailSent': '📧 A password reset link was sent to your email — check your inbox (and spam folder)',
     'cloud.synced': '☁️ Update received from another device',
     'cloud.sessionLost': '⚠️ Cloud sync session lost — log in again from Settings to resume automatic saving',
     'cloud.pushFailed': '⚠️ Failed to sync the last change to the cloud — check your internet connection',
@@ -3093,6 +3100,7 @@ tradeForm.addEventListener('submit', (e)=>{
 });
 
 function deleteTrade(id){
+  if(!confirm(t('journal.confirmDelete'))) return;
   trades = trades.filter(t=>t.id !== id);
   saveTradesToStorage();
   syncActiveAccountTrades();
@@ -4655,14 +4663,20 @@ function startCloudSync(uid){
   let firstSnapshot = true;
   // Note: modular Firestore's exists is a METHOD (snap.exists()), unlike
   // the compat SDK where it was a plain property (snap.exists).
+  //
+  // Deliberately does NOT auto-push local data just because a snapshot
+  // briefly reports "no data yet" — that used to happen here to seed a
+  // brand-new account, but it also fired on ordinary reconnects (this
+  // function re-runs on every network/visibility recovery), and a
+  // momentary connectivity hiccup reporting "no data" was enough to
+  // overwrite the real cloud state with this device's stale local copy,
+  // silently undoing deletions made on OTHER devices while this one was
+  // offline. Seeding a new account now happens explicitly, once, right
+  // after signup — see the signup handler.
   cloudUnsubscribe = onSnapshot(docRef, (snap)=>{
     if(snap.exists()){
       applyCloudSnapshot(snap.data());
       if(!firstSnapshot) showToast(t('cloud.synced'));
-    } else if(firstSnapshot){
-      // Brand-new account with no cloud data yet — seed it with whatever
-      // is currently on this device.
-      pushToCloud();
     }
     firstSnapshot = false;
   }, (err)=>{
@@ -4762,7 +4776,28 @@ document.getElementById('cloudSignupBtn').addEventListener('click', ()=>{
     return;
   }
   window.__fsModular.createUserWithEmailAndPassword(cloudAuth, email, password)
-    .then(()=>{ showToast(t('cloud.signupSuccess')); })
+    .then(()=>{
+      showToast(t('cloud.signupSuccess'));
+      // This is the ONE deliberate, explicit moment we seed the cloud with
+      // this device's current local data — a brand-new account has
+      // nothing in Firestore yet, so there's no risk of overwriting real
+      // data from another device. A short delay lets onAuthStateChanged
+      // finish setting cloudUser/cloudDb first.
+      setTimeout(()=> pushToCloud(), 300);
+    })
+    .catch((err)=>{ showCloudError(cloudErrorMessage(err)); });
+});
+
+document.getElementById('cloudForgotPasswordBtn').addEventListener('click', ()=>{
+  if(!cloudAuth || !window.__fsModular) return;
+  hideCloudError();
+  const email = document.getElementById('cloudEmail').value.trim();
+  if(!email){
+    showCloudError(t('cloud.errInvalidEmail'));
+    return;
+  }
+  window.__fsModular.sendPasswordResetEmail(cloudAuth, email)
+    .then(()=>{ showToast(t('cloud.resetEmailSent')); })
     .catch((err)=>{ showCloudError(cloudErrorMessage(err)); });
 });
 
