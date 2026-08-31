@@ -566,6 +566,26 @@
   .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
   .file-preview{ margin-top:10px; max-height:110px; border-radius:8px; display:none; }
 
+  /* ---------------- Image editor ---------------- */
+  .img-editor-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .ie-tool-btn{
+    padding:8px 14px; border-radius:9px; border:1px solid var(--border); background:var(--card-2);
+    color:var(--text); cursor:pointer; font-size:12.5px; font-weight:600;
+  }
+  .ie-tool-btn.active{ background:var(--purple); color:#fff; border-color:var(--purple); }
+  .ie-color-input{
+    width:38px; height:36px; padding:2px; border-radius:8px; border:1px solid var(--border);
+    background:var(--card-2); cursor:pointer;
+  }
+  .ie-brush-range{ width:100px; accent-color:var(--purple-soft); }
+  .img-editor-canvas-wrap{
+    position:relative; display:flex; justify-content:center; align-items:center;
+    background:var(--card-2); border:1px solid var(--border); border-radius:12px;
+    padding:10px; overflow:auto; max-height:55vh;
+  }
+  #imgEditorCanvas{ touch-action:none; cursor:crosshair; max-width:100%; border-radius:6px; display:block; }
+
+
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--card-2); border:1px solid var(--border); color:var(--text);
@@ -1406,7 +1426,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-image-viewer-fix-v10
+        Build: 2026-08-31-image-editor-v11
       </div>
     </div>
   </section>
@@ -1564,6 +1584,46 @@
   </div>
 </div>
 
+<!-- ===================== IMAGE EDITOR MODAL ===================== -->
+<div class="modal-overlay" id="imageEditorOverlay">
+  <div class="modal" style="max-width:720px;">
+    <h2 data-i18n="imgEditor.title">تعديل الصورة</h2>
+    <div class="modal-sub" data-i18n="imgEditor.sub">اقصص الصورة من حوافها أو ارسم عليها لتمييز نقاط الدخول والخروج</div>
+
+    <div class="img-editor-toolbar">
+      <button type="button" class="ie-tool-btn active" id="ieDrawBtn">
+        <span data-i18n="imgEditor.draw">✏️ رسم</span>
+      </button>
+      <button type="button" class="ie-tool-btn" id="ieCropBtn">
+        <span data-i18n="imgEditor.crop">✂️ قص</span>
+      </button>
+      <input type="color" id="ieColor" value="#FF3B30" class="ie-color-input">
+      <input type="range" id="ieBrushSize" min="2" max="24" value="5" class="ie-brush-range">
+      <button type="button" class="ie-tool-btn" id="ieUndoBtn">
+        <span data-i18n="imgEditor.undo">↩️ تراجع</span>
+      </button>
+      <button type="button" class="ie-tool-btn" id="ieResetBtn">
+        <span data-i18n="imgEditor.reset">🗑️ إعادة تعيين</span>
+      </button>
+    </div>
+
+    <div class="img-editor-canvas-wrap">
+      <canvas id="imgEditorCanvas"></canvas>
+    </div>
+
+    <div id="ieCropActions" style="display:none; margin-top:10px;">
+      <button type="button" class="btn-primary" id="ieApplyCropBtn" style="padding:8px 16px; font-size:12.5px;">
+        <span data-i18n="imgEditor.applyCrop">تطبيق القص على المنطقة المحددة</span>
+      </button>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="ieSkipBtn" data-i18n="imgEditor.useAsIs">استخدام بدون تعديل</button>
+      <button type="button" class="btn-primary" id="ieSaveBtn" data-i18n="imgEditor.save">حفظ الصورة المعدَّلة</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1674,6 +1734,12 @@ const TRANSLATIONS = {
     'journal.addTitle': 'إضافة صفقة جديدة', 'journal.addSub': 'سجّل تفاصيل الصفقة بعد إغلاقها',
     'journal.edit': 'تعديل', 'journal.delete': 'حذف',
     'journal.confirmDelete': 'سيتم حذف هذه الصفقة نهائياً من سجلك. هل أنت متأكد؟',
+    'imgEditor.title': 'تعديل الصورة',
+    'imgEditor.sub': 'اقصص الصورة من حوافها أو ارسم عليها لتمييز نقاط الدخول والخروج',
+    'imgEditor.draw': '✏️ رسم', 'imgEditor.crop': '✂️ قص',
+    'imgEditor.undo': '↩️ تراجع', 'imgEditor.reset': '🗑️ إعادة تعيين',
+    'imgEditor.applyCrop': 'تطبيق القص على المنطقة المحددة',
+    'imgEditor.useAsIs': 'استخدام بدون تعديل', 'imgEditor.save': 'حفظ الصورة المعدَّلة',
 
     'modal.date': 'التاريخ', 'modal.direction': 'نوع الصفقة', 'modal.buy': 'شراء', 'modal.sell': 'بيع',
     'modal.lot': 'حجم اللوت', 'modal.result': 'النتيجة', 'modal.win': 'رابحة', 'modal.loss': 'خاسرة',
@@ -1872,6 +1938,12 @@ const TRANSLATIONS = {
     'journal.addTitle': 'Add New Trade', 'journal.addSub': 'Log the trade details after closing it',
     'journal.edit': 'Edit', 'journal.delete': 'Delete',
     'journal.confirmDelete': 'This trade will be permanently deleted from your journal. Are you sure?',
+    'imgEditor.title': 'Edit Image',
+    'imgEditor.sub': 'Crop the edges or draw on it to mark entry and exit points',
+    'imgEditor.draw': '✏️ Draw', 'imgEditor.crop': '✂️ Crop',
+    'imgEditor.undo': '↩️ Undo', 'imgEditor.reset': '🗑️ Reset',
+    'imgEditor.applyCrop': 'Apply Crop to Selected Area',
+    'imgEditor.useAsIs': 'Use Without Editing', 'imgEditor.save': 'Save Edited Image',
 
     'modal.date': 'Date', 'modal.direction': 'Trade Type', 'modal.buy': 'Buy', 'modal.sell': 'Sell',
     'modal.lot': 'Lot Size', 'modal.result': 'Result', 'modal.win': 'Win', 'modal.loss': 'Loss',
@@ -2841,17 +2913,200 @@ document.getElementById('addTradeBtn').addEventListener('click', openModal);
 document.getElementById('cancelModal').addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) closeModal(); });
 
+/* =====================================================================
+   IMAGE EDITOR — crop and freehand-draw on any image before it's attached
+   to a trade, open position, or note. Pure <canvas> + Pointer Events (so
+   the same code handles mouse, touch, and pen input without duplication).
+   Usage: openImageEditor(sourceDataUrl, (finalDataUrl) => { ...use it... })
+   ===================================================================== */
+const ieCanvas = document.getElementById('imgEditorCanvas');
+const ieCtx = ieCanvas.getContext('2d');
+let ieOnSave = null;
+let ieOriginalDataUrl = null;
+let ieMode = 'draw'; // 'draw' | 'crop'
+let ieHistory = [];  // stack of data URLs for undo
+let ieDrawing = false;
+let ieCropping = false;
+let ieCropStart = null;
+let ieCropRect = null; // {x,y,w,h} in canvas pixel space, once a selection exists
+let ieCleanSnapshot = null; // canvas state without the in-progress crop overlay
+
+const IE_MAX_DIM = 640; // max working canvas dimension, keeps files reasonably small
+
+function openImageEditor(sourceDataUrl, onSave){
+  ieOriginalDataUrl = sourceDataUrl;
+  ieOnSave = onSave;
+  const img = new Image();
+  img.onload = ()=>{
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const scale = Math.min(1, IE_MAX_DIM / Math.max(w, h));
+    w = Math.round(w * scale);
+    h = Math.round(h * scale);
+    ieCanvas.width = w;
+    ieCanvas.height = h;
+    ieCtx.drawImage(img, 0, 0, w, h);
+    ieHistory = [ieCanvas.toDataURL('image/png')];
+    ieCropRect = null;
+    document.getElementById('ieCropActions').style.display = 'none';
+    setIeMode('draw');
+    document.getElementById('imageEditorOverlay').classList.add('open');
+  };
+  img.src = sourceDataUrl;
+}
+
+function ieGetCoords(e){
+  const rect = ieCanvas.getBoundingClientRect();
+  const scaleX = ieCanvas.width / rect.width;
+  const scaleY = ieCanvas.height / rect.height;
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+function setIeMode(mode){
+  ieMode = mode;
+  document.getElementById('ieDrawBtn').classList.toggle('active', mode === 'draw');
+  document.getElementById('ieCropBtn').classList.toggle('active', mode === 'crop');
+  document.getElementById('ieCropActions').style.display = (mode === 'crop' && ieCropRect) ? 'block' : 'none';
+}
+
+function iePushHistory(){
+  ieHistory.push(ieCanvas.toDataURL('image/png'));
+  if(ieHistory.length > 15) ieHistory.shift(); // cap memory use
+}
+
+function ieRestoreFromDataUrl(dataUrl, cb){
+  const img = new Image();
+  img.onload = ()=>{
+    ieCanvas.width = img.naturalWidth;
+    ieCanvas.height = img.naturalHeight;
+    ieCtx.drawImage(img, 0, 0);
+    if(cb) cb();
+  };
+  img.src = dataUrl;
+}
+
+ieCanvas.addEventListener('pointerdown', (e)=>{
+  ieCanvas.setPointerCapture(e.pointerId);
+  const {x, y} = ieGetCoords(e);
+  if(ieMode === 'draw'){
+    ieDrawing = true;
+    ieCtx.strokeStyle = document.getElementById('ieColor').value;
+    ieCtx.lineWidth = parseInt(document.getElementById('ieBrushSize').value, 10);
+    ieCtx.lineCap = 'round';
+    ieCtx.lineJoin = 'round';
+    ieCtx.beginPath();
+    ieCtx.moveTo(x, y);
+  } else if(ieMode === 'crop'){
+    ieCropping = true;
+    ieCropStart = {x, y};
+    ieCleanSnapshot = ieCanvas.toDataURL('image/png');
+  }
+});
+
+ieCanvas.addEventListener('pointermove', (e)=>{
+  const {x, y} = ieGetCoords(e);
+  if(ieMode === 'draw' && ieDrawing){
+    ieCtx.lineTo(x, y);
+    ieCtx.stroke();
+  } else if(ieMode === 'crop' && ieCropping){
+    const rx = Math.min(ieCropStart.x, x), ry = Math.min(ieCropStart.y, y);
+    const rw = Math.abs(x - ieCropStart.x), rh = Math.abs(y - ieCropStart.y);
+    ieCropRect = { x: rx, y: ry, w: rw, h: rh };
+    const clean = new Image();
+    clean.onload = ()=>{
+      ieCtx.drawImage(clean, 0, 0);
+      ieCtx.save();
+      ieCtx.fillStyle = 'rgba(0,0,0,0.45)';
+      ieCtx.fillRect(0, 0, ieCanvas.width, ieCanvas.height);
+      ieCtx.clearRect(rx, ry, rw, rh);
+      ieCtx.drawImage(clean, rx, ry, rw, rh, rx, ry, rw, rh);
+      ieCtx.strokeStyle = '#fff';
+      ieCtx.lineWidth = 2;
+      ieCtx.setLineDash([6,4]);
+      ieCtx.strokeRect(rx, ry, rw, rh);
+      ieCtx.restore();
+    };
+    clean.src = ieCleanSnapshot;
+  }
+});
+
+function ieEndStroke(){
+  if(ieMode === 'draw' && ieDrawing){
+    ieDrawing = false;
+    iePushHistory();
+  } else if(ieMode === 'crop' && ieCropping){
+    ieCropping = false;
+    if(ieCropRect && ieCropRect.w > 4 && ieCropRect.h > 4){
+      document.getElementById('ieCropActions').style.display = 'block';
+    }
+  }
+}
+ieCanvas.addEventListener('pointerup', ieEndStroke);
+ieCanvas.addEventListener('pointercancel', ieEndStroke);
+
+document.getElementById('ieDrawBtn').addEventListener('click', ()=> setIeMode('draw'));
+document.getElementById('ieCropBtn').addEventListener('click', ()=> setIeMode('crop'));
+
+document.getElementById('ieApplyCropBtn').addEventListener('click', ()=>{
+  if(!ieCropRect) return;
+  const { x, y, w, h } = ieCropRect;
+  const clean = new Image();
+  clean.onload = ()=>{
+    const cropped = document.createElement('canvas');
+    cropped.width = Math.round(w);
+    cropped.height = Math.round(h);
+    cropped.getContext('2d').drawImage(clean, x, y, w, h, 0, 0, w, h);
+    ieCanvas.width = cropped.width;
+    ieCanvas.height = cropped.height;
+    ieCtx.drawImage(cropped, 0, 0);
+    ieCropRect = null;
+    document.getElementById('ieCropActions').style.display = 'none';
+    iePushHistory();
+    setIeMode('draw');
+  };
+  clean.src = ieCleanSnapshot;
+});
+
+document.getElementById('ieUndoBtn').addEventListener('click', ()=>{
+  if(ieHistory.length <= 1) return;
+  ieHistory.pop();
+  ieRestoreFromDataUrl(ieHistory[ieHistory.length - 1]);
+  ieCropRect = null;
+  document.getElementById('ieCropActions').style.display = 'none';
+});
+
+document.getElementById('ieResetBtn').addEventListener('click', ()=>{
+  ieRestoreFromDataUrl(ieOriginalDataUrl, ()=>{
+    ieHistory = [ieCanvas.toDataURL('image/png')];
+  });
+  ieCropRect = null;
+  document.getElementById('ieCropActions').style.display = 'none';
+});
+
+document.getElementById('ieSkipBtn').addEventListener('click', ()=>{
+  document.getElementById('imageEditorOverlay').classList.remove('open');
+  if(ieOnSave) ieOnSave(ieOriginalDataUrl);
+});
+
+document.getElementById('ieSaveBtn').addEventListener('click', ()=>{
+  const finalDataUrl = ieCanvas.toDataURL('image/jpeg', 0.9);
+  document.getElementById('imageEditorOverlay').classList.remove('open');
+  if(ieOnSave) ieOnSave(finalDataUrl);
+});
+
 function wireImageInput(inputId, previewId){
   document.getElementById(inputId).addEventListener('change', (e)=>{
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
     reader.onload = ()=>{
-      const preview = document.getElementById(previewId);
-      preview.src = reader.result;
-      preview.style.display = 'block';
+      openImageEditor(reader.result, (finalDataUrl)=>{
+        const preview = document.getElementById(previewId);
+        preview.src = finalDataUrl;
+        preview.style.display = 'block';
+      });
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   });
 }
 wireImageInput('fImageBefore', 'fImageBeforePreview');
@@ -2912,20 +3167,29 @@ function renderNoteFilesList(){
 
 document.getElementById('nImages').addEventListener('change', (e)=>{
   const files = Array.from(e.target.files || []);
-  let readCount = 0;
-  files.forEach(file=>{
+  e.target.value = '';
+  if(!files.length) return;
+  // The editor is opened once per image, in sequence — this keeps a
+  // single consistent flow (edit-or-skip, then move to the next one)
+  // instead of juggling several editor sessions at once.
+  let idx = 0;
+  function processNext(){
+    if(idx >= files.length){ renderNoteImagesGallery(); return; }
+    const file = files[idx];
     if(file.size > NOTE_FILE_WARN_BYTES){
       showToast(t('notes.largeFileWarning', {name: file.name}));
     }
     const reader = new FileReader();
     reader.onload = ()=>{
-      draftNoteImages.push(reader.result);
-      readCount++;
-      if(readCount === files.length) renderNoteImagesGallery();
+      openImageEditor(reader.result, (finalDataUrl)=>{
+        draftNoteImages.push(finalDataUrl);
+        idx++;
+        processNext();
+      });
     };
     reader.readAsDataURL(file);
-  });
-  e.target.value = '';
+  }
+  processNext();
 });
 
 document.getElementById('nFiles').addEventListener('change', (e)=>{
