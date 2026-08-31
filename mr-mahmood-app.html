@@ -21,26 +21,38 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 
-<!-- Cloud Sync (optional): Firebase Auth + Firestore. The app works fully
-     without these ever loading — see cloudSyncEnabled check in the script. -->
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<!-- Cloud Sync (optional): Firebase Auth + Firestore, both via the modular
+     SDK below (loaded together so they share the same app instance, which
+     Firestore's security rules need to recognize the signed-in user). The
+     app works fully without any of this ever loading — see
+     cloudSyncConfigured check in the script. -->
 
 <!-- The compat Firestore SDK above does NOT reliably support named (non-
      "(default)") databases — it silently falls back to "(default)" instead
      of throwing, which is why our named database ("me-central1") kept
      failing invisibly. Only the modern modular SDK's getFirestore(app, id)
-     is confirmed to actually honor a database ID, so we load it here for
-     Firestore specifically, while continuing to use the (working) compat
-     SDK for Authentication. Exposes what's needed on window so the rest of
-     the app's plain script code can call it as if it were compat syntax. -->
+     is confirmed to actually honor a database ID, so we load it here.
+     Auth is ALSO loaded via the modular SDK now (not the compat one above)
+     — mixing compat Auth with modular Firestore left them on two separate
+     internal app registries, so Firestore never received the signed-in
+     user's credentials and every write was silently rejected as
+     unauthenticated. Everything cloud-related now lives on one modular
+     app instance. Exposes what's needed on window so the rest of the
+     app's plain script code can call it. -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+    createUserWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import {
     getFirestore, doc, setDoc, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-  window.__fsModular = { initializeApp, getFirestore, doc, setDoc, onSnapshot, serverTimestamp };
+  window.__fsModular = {
+    initializeApp,
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+    getFirestore, doc, setDoc, onSnapshot, serverTimestamp,
+  };
 </script>
 <style>
   :root{
@@ -1393,7 +1405,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-modular-firestore-v5
+        Build: 2026-08-31-full-modular-v6
       </div>
     </div>
   </section>
@@ -4674,26 +4686,21 @@ if(cloudSyncConfigured){
       return;
     }
     try{
-      // Two SEPARATE Firebase app instances are initialized here on
-      // purpose: the compat SDK (firebase.initializeApp) for Auth, since
-      // that has been reliable, and the modular SDK's own initializeApp
-      // for Firestore — they do NOT share the same internal app registry
-      // even at the identical version number, so modular getApp() cannot
-      // see an app that only the compat SDK created (confirmed by testing:
-      // that mismatch was the actual cause of "No Firebase App [DEFAULT]"
-      // errors here).
-      firebase.initializeApp(firebaseConfig);
-      cloudAuth = firebase.auth();
+      // Auth and Firestore now BOTH live on this same modular app instance
+      // — this is required so Firestore actually receives the signed-in
+      // user's credentials (needed for our security rules to recognize
+      // request.auth.uid). Mixing compat Auth with modular Firestore
+      // earlier put them on two disconnected internal registries, so
+      // every write looked "logged in" in the UI but was silently
+      // rejected by Firestore as unauthenticated.
       const modularApp = window.__fsModular.initializeApp(firebaseConfig);
+      cloudAuth = window.__fsModular.getAuth(modularApp);
       // This project's Firestore database was created with a custom
       // database ID ("me-central1", matching its region) instead of the
-      // default "(default)" ID. The compat SDK's firebase.firestore(app,id)
-      // silently IGNORES the id and always falls back to "(default)" — this
-      // is a confirmed compat SDK limitation, not a typo — so we use the
-      // modular getFirestore(app, id), which does honor it correctly.
+      // default "(default)" ID, so it must be targeted explicitly.
       cloudDb = window.__fsModular.getFirestore(modularApp, 'me-central1');
 
-      cloudAuth.onAuthStateChanged((user)=>{
+      window.__fsModular.onAuthStateChanged(cloudAuth, (user)=>{
         cloudUser = user;
         updateCloudUI();
         if(user){
@@ -4721,17 +4728,17 @@ function hideCloudError(){
 
 document.getElementById('cloudAuthForm').addEventListener('submit', (e)=>{
   e.preventDefault();
-  if(!cloudAuth) return;
+  if(!cloudAuth || !window.__fsModular) return;
   hideCloudError();
   const email = document.getElementById('cloudEmail').value.trim();
   const password = document.getElementById('cloudPassword').value;
-  cloudAuth.signInWithEmailAndPassword(email, password)
+  window.__fsModular.signInWithEmailAndPassword(cloudAuth, email, password)
     .then(()=>{ showToast(t('cloud.loginSuccess')); })
     .catch((err)=>{ showCloudError(cloudErrorMessage(err)); });
 });
 
 document.getElementById('cloudSignupBtn').addEventListener('click', ()=>{
-  if(!cloudAuth) return;
+  if(!cloudAuth || !window.__fsModular) return;
   hideCloudError();
   const email = document.getElementById('cloudEmail').value.trim();
   const password = document.getElementById('cloudPassword').value;
@@ -4739,14 +4746,14 @@ document.getElementById('cloudSignupBtn').addEventListener('click', ()=>{
     showCloudError(t('cloud.errWeakInput'));
     return;
   }
-  cloudAuth.createUserWithEmailAndPassword(email, password)
+  window.__fsModular.createUserWithEmailAndPassword(cloudAuth, email, password)
     .then(()=>{ showToast(t('cloud.signupSuccess')); })
     .catch((err)=>{ showCloudError(cloudErrorMessage(err)); });
 });
 
 document.getElementById('cloudLogoutBtn').addEventListener('click', ()=>{
-  if(!cloudAuth) return;
-  cloudAuth.signOut().then(()=>{ showToast(t('cloud.loggedOut')); });
+  if(!cloudAuth || !window.__fsModular) return;
+  window.__fsModular.signOut(cloudAuth).then(()=>{ showToast(t('cloud.loggedOut')); });
 });
 
 function cloudErrorMessage(err){
