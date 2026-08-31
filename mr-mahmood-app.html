@@ -694,16 +694,19 @@
       padding:12px 16px; border-left:none; border-bottom:1px solid var(--border);
       gap:10px 18px;
     }
-    .brand{ padding:0; flex-shrink:0; }
+    .brand{ padding:0; flex-shrink:1; min-width:0; overflow:hidden; }
+    .brand-text{ min-width:0; overflow:hidden; }
+    .brand-text .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .brand-text .tag{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .account-switcher-wrap{ padding:0; width:140px; flex-shrink:0; }
     .menu-label{ display:none; }
-    .menu{ flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:6px; flex:1; min-width:0; }
+    .menu{ flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:6px; flex-basis:100%; min-width:0; order:1; }
     .menu-item{ white-space:nowrap; flex-shrink:0; padding:8px 12px; }
     .menu-item.active::after{ display:none; }
     .menu-item.active{ box-shadow: inset 0 0 0 1px rgba(139,127,255,0.35); }
     .sidebar-footer{
       width:100%; margin-top:0; border-top:1px solid var(--border); padding-top:10px;
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap; order:2;
     }
     .quick-toggle{ width:auto; margin-bottom:0; flex:1; min-width:170px; }
     .data-actions{ flex-direction:row; flex-wrap:wrap; gap:8px; margin-bottom:0; flex:2; min-width:220px; }
@@ -759,6 +762,10 @@
     .risk-limit-grid{ grid-template-columns: 1fr; gap:14px; }
     .theme-grid{ grid-template-columns: 1fr; }
     .stat-value{ font-size:22px; }
+    /* The tagline is purely decorative — dropping it on very narrow phones
+       frees up real space for the navigation menu, instead of squeezing
+       every element slightly (which just made everything cramped). */
+    .brand-text .tag{ display:none; }
   }
   /* =====================================================================
      PREMIUM VISUAL POLISH — ambient depth, distinct accent colors per
@@ -1426,7 +1433,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-image-quality-fix-v12
+        Build: 2026-08-31-mobile-layout-fix-v13
       </div>
     </div>
   </section>
