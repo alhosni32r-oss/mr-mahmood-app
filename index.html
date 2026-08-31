@@ -1406,7 +1406,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-safety-features-v9
+        Build: 2026-08-31-image-viewer-fix-v10
       </div>
     </div>
   </section>
@@ -2461,7 +2461,7 @@ function renderNotes(){
     card.style.color = color.text;
     const dateStr = new Date(n.createdAt).toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', {year:'numeric', month:'short', day:'numeric'});
     const imagesHtml = (n.images && n.images.length) ? `<div class="note-card-images">${
-      n.images.map(img=>`<img src="${img}" onclick="window.open('${img}')">`).join('')
+      n.images.map(img=>`<img src="${img}" onclick="viewImageFullscreen('${img}')">`).join('')
     }</div>` : '';
     const filesHtml = (n.files && n.files.length) ? `<div class="note-card-files">${
       n.files.map((f,idx)=>`<a class="note-card-file-link" href="javascript:void(0)" onclick="downloadNoteFileByIndex('${n.id}', ${idx})">
@@ -3278,8 +3278,8 @@ function renderOpenPositions(){
       <td class="mono-cell">${pos.entryPrice || '—'}</td>
       <td class="mono-cell" style="color:${pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(pl)}</td>
       <td class="comment-cell">${pos.lastUpdated ? positionTimeAgo(pos.lastUpdated) : t('positions.neverUpdated')}</td>
-      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" onclick="window.open('${pos.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" onclick="window.open('${pos.imageAfter}')" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
+      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" onclick="viewImageFullscreen('${pos.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" onclick="viewImageFullscreen('${pos.imageAfter}')" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" style="padding:5px 9px; font-size:11px;" onclick="updatePositionPL('${pos.id}')">${t('positions.updatePL')}</button>
@@ -3310,6 +3310,30 @@ function renderOpenPositionsBanner(){
   const plEl = document.getElementById('openPositionsBannerPL');
   plEl.textContent = t('dash.openPositionsFloatingPL') + ' ' + fmtMoney(totalPL);
   plEl.style.color = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+// Opens an image data: URL in a new tab reliably. Some browsers silently
+// fail (blank/black tab) when navigating directly to a very long data:
+// URL — converting it to a short-lived Blob Object URL first is the
+// well-established, more compatible way to open large embedded images.
+function viewImageFullscreen(dataUrl){
+  try{
+    const commaIdx = dataUrl.indexOf(',');
+    const header = dataUrl.slice(0, commaIdx);
+    const base64 = dataUrl.slice(commaIdx + 1);
+    const mimeMatch = header.match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], {type: mime});
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    setTimeout(()=> URL.revokeObjectURL(blobUrl), 60000);
+  }catch(e){
+    console.warn('viewImageFullscreen: Blob conversion failed, falling back to direct open:', e);
+    window.open(dataUrl, '_blank');
+  }
 }
 
 function showToast(msg){
@@ -4126,8 +4150,8 @@ function showDayTradesModal(dateKey){
     item.className = 'day-trade-item';
     const imagesHtml = (tr.imageBefore || tr.imageAfter) ? `
       <div class="day-trade-item-images">
-        ${tr.imageBefore ? `<img src="${tr.imageBefore}" title="${t('modal.imgBefore')}" onclick="window.open('${tr.imageBefore}')">` : ''}
-        ${tr.imageAfter ? `<img src="${tr.imageAfter}" title="${t('modal.imgAfter')}" onclick="window.open('${tr.imageAfter}')">` : ''}
+        ${tr.imageBefore ? `<img src="${tr.imageBefore}" title="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${tr.imageBefore}')">` : ''}
+        ${tr.imageAfter ? `<img src="${tr.imageAfter}" title="${t('modal.imgAfter')}" onclick="viewImageFullscreen('${tr.imageAfter}')">` : ''}
       </div>` : '';
     item.innerHTML = `
       <div class="day-trade-item-head">
@@ -4298,8 +4322,8 @@ function renderJournal(){
       <td>${resultBadge(trade.result)}</td>
       <td class="mono-cell" style="color:${trade.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(trade.pl)}</td>
       <td class="comment-cell">${trade.comment ? trade.comment : '—'}</td>
-      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" onclick="window.open('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" onclick="window.open('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
+      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" onclick="editTrade('${trade.id}')">${t('journal.edit')}</button>
