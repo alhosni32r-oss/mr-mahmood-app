@@ -1444,7 +1444,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-notifications-v14
+        Build: 2026-09-02-fix-edit-trade-v15
       </div>
     </div>
   </section>
@@ -2918,23 +2918,23 @@ function openModal(){
 }
 
 function editTrade(id){
-  const t = trades.find(x=>x.id === id);
-  if(!t) return;
+  const trade = trades.find(x=>x.id === id);
+  if(!trade) return;
   editingId = id;
-  document.getElementById('fDate').value = t.date;
-  document.getElementById('fPair').value = t.pair;
-  document.getElementById('fDirection').value = t.direction;
-  document.getElementById('fLot').value = t.lot;
-  document.getElementById('fSL').value = t.sl || '';
-  document.getElementById('fTP').value = t.tp || '';
-  document.getElementById('fResult').value = t.result;
-  document.getElementById('fPL').value = t.pl;
-  document.getElementById('fComment').value = t.comment || '';
+  document.getElementById('fDate').value = trade.date;
+  document.getElementById('fPair').value = trade.pair;
+  document.getElementById('fDirection').value = trade.direction;
+  document.getElementById('fLot').value = trade.lot;
+  document.getElementById('fSL').value = trade.sl || '';
+  document.getElementById('fTP').value = trade.tp || '';
+  document.getElementById('fResult').value = trade.result;
+  document.getElementById('fPL').value = trade.pl;
+  document.getElementById('fComment').value = trade.comment || '';
 
   const beforePrev = document.getElementById('fImageBeforePreview');
   const afterPrev = document.getElementById('fImageAfterPreview');
-  if(t.imageBefore){ beforePrev.src = t.imageBefore; beforePrev.style.display = 'block'; } else { resetImagePreview('fImageBeforePreview'); }
-  if(t.imageAfter){ afterPrev.src = t.imageAfter; afterPrev.style.display = 'block'; } else { resetImagePreview('fImageAfterPreview'); }
+  if(trade.imageBefore){ beforePrev.src = trade.imageBefore; beforePrev.style.display = 'block'; } else { resetImagePreview('fImageBeforePreview'); }
+  if(trade.imageAfter){ afterPrev.src = trade.imageAfter; afterPrev.style.display = 'block'; } else { resetImagePreview('fImageAfterPreview'); }
 
   modalTitle.textContent = t('journal.editTitle');
   modalSub.textContent = t('journal.editSub');
