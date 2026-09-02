@@ -1444,7 +1444,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-merge-sync-fix-v17
+        Build: 2026-09-02-race-condition-fix-v18
       </div>
     </div>
   </section>
@@ -5100,15 +5100,26 @@ async function pushToCloud(){
   try{
     const { doc, setDoc, getDoc, serverTimestamp } = window.__fsModular;
     const docRef = doc(cloudDb, 'users', cloudUser.uid, 'data', 'main');
-    // Read the current server state first and merge it with what's local,
-    // instead of blindly overwriting — protects against this device's
-    // local copy being slightly behind a very recent change made on
-    // another device just moments ago.
+    // Capture exactly what THIS call intends to push, right now, before any
+    // `await` — a plain reference to the global `accounts`/`notes` arrays
+    // is NOT safe here: the real-time listener can fire and reassign those
+    // same globals while we're mid-flight waiting on the network (e.g. an
+    // update arriving from another device), and reading them again later
+    // in this function would then merge/push that stale-relative-to-this-
+    // edit data instead of the change that actually triggered this push.
+    const intendedAccounts = JSON.parse(JSON.stringify(accounts));
+    const intendedNotes = JSON.parse(JSON.stringify(notes));
+    const intendedActiveAccountId = activeAccountId;
+    // Read the current server state and merge it with the captured local
+    // snapshot, instead of blindly overwriting — protects against this
+    // device's local copy being slightly behind a very recent change made
+    // on another device just moments ago.
     const serverSnap = await getDoc(docRef);
     if(serverSnap.exists()){
       const serverData = serverSnap.data();
-      accounts = mergeAccounts(accounts, serverData.accounts);
-      notes = mergeItemsById(notes, serverData.notes);
+      accounts = mergeAccounts(intendedAccounts, serverData.accounts);
+      notes = mergeItemsById(intendedNotes, serverData.notes);
+      activeAccountId = intendedActiveAccountId;
       const activeAcc = accounts.find(a => a.id === activeAccountId) || accounts[0];
       if(activeAcc){
         trades = activeAcc.trades;
@@ -5128,6 +5139,10 @@ async function pushToCloud(){
       } finally {
         isApplyingRemoteUpdate = false;
       }
+    } else {
+      accounts = intendedAccounts;
+      notes = intendedNotes;
+      activeAccountId = intendedActiveAccountId;
     }
     await setDoc(docRef, { accounts, activeAccountId, notes, updatedAt: serverTimestamp() });
   }catch(e){
