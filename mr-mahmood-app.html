@@ -46,12 +46,12 @@
     createUserWithEmailAndPassword, signOut, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
-    getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   window.__fsModular = {
     initializeApp,
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail,
-    getFirestore, doc, setDoc, onSnapshot, serverTimestamp,
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
   };
 </script>
 <style>
@@ -1444,7 +1444,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-storage-full-warning-v16
+        Build: 2026-09-02-merge-sync-fix-v17
       </div>
     </div>
   </section>
@@ -3320,6 +3320,7 @@ noteForm.addEventListener('submit', (e)=>{
     files: draftNoteFiles.slice(),
     createdAt: editingNoteId ? (notes.find(n=>n.id===editingNoteId)||{}).createdAt || new Date().toISOString() : new Date().toISOString(),
     colorIndex: selectedNoteColorIndex,
+    updatedAt: Date.now(),
   };
   if(editingNoteId){
     const idx = notes.findIndex(n=>n.id === editingNoteId);
@@ -3381,6 +3382,7 @@ positionForm.addEventListener('submit', (e)=>{
     imageBefore: beforePrev.style.display === 'block' ? beforePrev.src : null,
     imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
     lastUpdated: new Date().toISOString(),
+    updatedAt: Date.now(),
   };
   addOpenPosition(pos);
   closePositionModal();
@@ -3403,6 +3405,7 @@ tradeForm.addEventListener('submit', (e)=>{
     comment: document.getElementById('fComment').value.trim(),
     imageBefore: beforePrev.style.display === 'block' ? beforePrev.src : null,
     imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
+    updatedAt: Date.now(),
   };
 
   if(editingId){
@@ -3518,6 +3521,7 @@ document.getElementById('positionActionForm').addEventListener('submit', (e)=>{
     pos.comment = comment;
     if(newImage) pos.imageAfter = newImage;
     pos.lastUpdated = new Date().toISOString();
+    pos.updatedAt = Date.now();
     syncActiveAccountPositions();
     renderOpenPositions();
     renderDashboard();
@@ -3537,6 +3541,7 @@ document.getElementById('positionActionForm').addEventListener('submit', (e)=>{
       comment: comment || pos.comment || '',
       imageBefore: pos.imageBefore || null,
       imageAfter: newImage || pos.imageAfter || null,
+      updatedAt: Date.now(),
     };
     trades.push(trade);
     trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
@@ -5034,6 +5039,51 @@ function updateCloudUI(){
 // Firestore document. Warns visibly every time it's skipped due to a lost
 // session — earlier versions failed silently here, making it look like
 // sync was broken when actually the login session had just expired.
+// Merges two arrays of items (trades, notes, or open positions) by `id`,
+// keeping whichever version of each item has the more recent `updatedAt`
+// timestamp — instead of one whole array blindly replacing the other.
+// This is the actual fix for cross-device data loss: two devices touching
+// DIFFERENT trades (or even the same one at different times) no longer
+// clobber each other's most recent work just because one device's local
+// copy was a little behind when it happened to save something else.
+function mergeItemsById(localList, serverList){
+  const map = new Map();
+  (serverList || []).forEach(item => { if(item && item.id) map.set(item.id, item); });
+  (localList || []).forEach(item => {
+    if(!item || !item.id) return;
+    const existing = map.get(item.id);
+    if(!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)){
+      map.set(item.id, item);
+    }
+  });
+  return Array.from(map.values());
+}
+
+// Merges the full accounts list: accounts present on either side are kept,
+// and for an account present on BOTH, its trades/openPositions are merged
+// item-by-item (via mergeItemsById) rather than picking one device's whole
+// account wholesale.
+function mergeAccounts(localAccounts, serverAccounts){
+  const serverById = new Map((serverAccounts || []).map(a => [a.id, a]));
+  const localById = new Map((localAccounts || []).map(a => [a.id, a]));
+  const allIds = new Set([...serverById.keys(), ...localById.keys()]);
+  const merged = [];
+  allIds.forEach(id => {
+    const local = localById.get(id);
+    const server = serverById.get(id);
+    if(local && server){
+      merged.push({
+        ...server, ...local,
+        trades: mergeItemsById(local.trades, server.trades),
+        openPositions: mergeItemsById(local.openPositions, server.openPositions),
+      });
+    } else {
+      merged.push(local || server);
+    }
+  });
+  return merged;
+}
+
 async function pushToCloud(){
   if(!cloudSyncConfigured){
     console.warn('pushToCloud skipped: cloud sync not configured');
@@ -5048,8 +5098,37 @@ async function pushToCloud(){
     return;
   }
   try{
-    const { doc, setDoc, serverTimestamp } = window.__fsModular;
+    const { doc, setDoc, getDoc, serverTimestamp } = window.__fsModular;
     const docRef = doc(cloudDb, 'users', cloudUser.uid, 'data', 'main');
+    // Read the current server state first and merge it with what's local,
+    // instead of blindly overwriting — protects against this device's
+    // local copy being slightly behind a very recent change made on
+    // another device just moments ago.
+    const serverSnap = await getDoc(docRef);
+    if(serverSnap.exists()){
+      const serverData = serverSnap.data();
+      accounts = mergeAccounts(accounts, serverData.accounts);
+      notes = mergeItemsById(notes, serverData.notes);
+      const activeAcc = accounts.find(a => a.id === activeAccountId) || accounts[0];
+      if(activeAcc){
+        trades = activeAcc.trades;
+        openPositions = activeAcc.openPositions;
+        if(!accounts.find(a => a.id === activeAccountId)) activeAccountId = activeAcc.id;
+      }
+      isApplyingRemoteUpdate = true;
+      try{
+        saveAccountsToStorage();
+        saveNotesToStorage();
+        renderDashboard();
+        renderJournal();
+        renderOpenPositions();
+        renderNotes();
+        renderAccountSwitcher();
+        renderAccountsSettingsList();
+      } finally {
+        isApplyingRemoteUpdate = false;
+      }
+    }
     await setDoc(docRef, { accounts, activeAccountId, notes, updatedAt: serverTimestamp() });
   }catch(e){
     console.warn('Cloud push failed:', e);
