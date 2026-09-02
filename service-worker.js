@@ -2,7 +2,7 @@
 // get the latest version when online — the old v1 strategy was cache-first,
 // which meant an installed app could get permanently "stuck" on whatever
 // version was cached the very first time it was installed.
-const CACHE_NAME = 'mr-mahmood-v2';
+const CACHE_NAME = 'mr-mahmood-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -66,6 +66,20 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cached);
       return cached || fetchPromise;
+    })
+  );
+});
+
+// Tapping a cross-device sync notification focuses an already-open app
+// window if there is one, or opens a new one otherwise.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
     })
   );
 });

@@ -1405,6 +1405,17 @@
         <button class="btn-danger" id="cloudLogoutBtn" data-i18n="cloud.logout" style="padding:7px 14px; font-size:12px;">تسجيل الخروج</button>
       </div>
 
+      <div id="cloudNotifyBox" style="display:none; align-items:center; justify-content:space-between; gap:12px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:14px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px; font-weight:600;" data-i18n="cloud.notifyLabel">🔔 إشعار عند وصول تحديث من جهاز آخر</div>
+          <div class="settings-sub" style="margin-bottom:0; margin-top:2px;" data-i18n="cloud.notifyDesc">يعمل عند فتح التطبيق أو تشغيله في الخلفية على هذا الجهاز — لا يعمل إذا كان التطبيق مغلقاً تماماً</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="cloudNotifyToggle">
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+
       <form id="cloudAuthForm" style="display:none;">
         <div class="calc-grid" style="gap:14px; margin-bottom:14px;">
           <div class="field-group" style="margin-bottom:0;">
@@ -1433,7 +1444,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-08-31-mobile-layout-fix-v13
+        Build: 2026-09-02-notifications-v14
       </div>
     </div>
   </section>
@@ -1768,6 +1779,15 @@ const TRANSLATIONS = {
     'cloud.loggedOut': 'تم تسجيل الخروج',
     'cloud.forgotPassword': 'نسيت كلمة المرور؟',
     'cloud.resetEmailSent': '📧 أُرسل رابط إعادة تعيين كلمة المرور إلى بريدك — تحقق من صندوق الوارد (وصندوق الرسائل غير المرغوبة)',
+    'cloud.notifyLabel': '🔔 إشعار عند وصول تحديث من جهاز آخر',
+    'cloud.notifyDesc': 'يعمل عند فتح التطبيق أو تشغيله في الخلفية على هذا الجهاز — لا يعمل إذا كان التطبيق مغلقاً تماماً',
+    'cloud.notifyTitle': 'MR.MAHMOOD',
+    'cloud.notifyNewTrade': '📊 وصلت صفقة جديدة من جهاز آخر',
+    'cloud.notifyNewNote': '📝 وصلت ملاحظة جديدة من جهاز آخر',
+    'cloud.notifyGeneric': '☁️ تحديث جديد وصل من جهاز آخر',
+    'cloud.notifyUnsupported': 'الإشعارات غير مدعومة في هذا المتصفح',
+    'cloud.notifyEnabled': '🔔 تم تفعيل الإشعارات بنجاح',
+    'cloud.notifyDenied': 'لم يُسمح بالإشعارات — يمكنك تفعيلها لاحقاً من إعدادات المتصفح',
     'cloud.synced': '☁️ تم استلام تحديث من جهاز آخر',
     'cloud.sessionLost': '⚠️ انقطعت جلسة المزامنة السحابية — سجّل دخولك مجدداً من الإعدادات لمتابعة الحفظ التلقائي',
     'cloud.pushFailed': '⚠️ فشلت مزامنة آخر تغيير مع السحابة — تحقق من الاتصال بالإنترنت',
@@ -1972,6 +1992,15 @@ const TRANSLATIONS = {
     'cloud.loggedOut': 'Logged out',
     'cloud.forgotPassword': 'Forgot your password?',
     'cloud.resetEmailSent': '📧 A password reset link was sent to your email — check your inbox (and spam folder)',
+    'cloud.notifyLabel': '🔔 Notify when an update arrives from another device',
+    'cloud.notifyDesc': 'Works while the app is open or running in the background on this device — not when fully closed',
+    'cloud.notifyTitle': 'MR.MAHMOOD',
+    'cloud.notifyNewTrade': '📊 A new trade arrived from another device',
+    'cloud.notifyNewNote': '📝 A new note arrived from another device',
+    'cloud.notifyGeneric': '☁️ New update arrived from another device',
+    'cloud.notifyUnsupported': 'Notifications are not supported in this browser',
+    'cloud.notifyEnabled': '🔔 Notifications enabled successfully',
+    'cloud.notifyDenied': 'Notifications were not allowed — you can enable them later in browser settings',
     'cloud.synced': '☁️ Update received from another device',
     'cloud.sessionLost': '⚠️ Cloud sync session lost — log in again from Settings to resume automatic saving',
     'cloud.pushFailed': '⚠️ Failed to sync the last change to the cloud — check your internet connection',
@@ -4208,6 +4237,78 @@ const savedSessionsVisible = loadSessionsVisibleFromStorage();
 setSessionsWidgetVisible(savedSessionsVisible === '1');
 
 /* =====================================================================
+   CROSS-DEVICE SYNC NOTIFICATIONS (optional, off by default)
+   Shows a native OS notification when a real-time update arrives from
+   another device. Only works while this device's app is open (foreground
+   or background tab/PWA) — true "app fully closed" push would need
+   Firebase Cloud Functions, which requires a paid Firebase plan.
+   ===================================================================== */
+const NOTIFY_PREF_KEY = 'mrmahmood_notify_v1';
+
+function saveNotifyPrefToStorage(v){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(NOTIFY_PREF_KEY, v ? '1' : '0'); }catch(e){}
+}
+function loadNotifyPrefFromStorage(){
+  if(!storageAvailable) return false;
+  try{ return localStorage.getItem(NOTIFY_PREF_KEY) === '1'; }catch(e){ return false; }
+}
+
+function maybeShowSyncNotification(tradesCountBefore, notesCountBefore){
+  if(!loadNotifyPrefFromStorage()) return;
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const tradesDiff = trades.length - tradesCountBefore;
+  const notesDiff = notes.length - notesCountBefore;
+  let body;
+  if(tradesDiff > 0) body = t('cloud.notifyNewTrade');
+  else if(notesDiff > 0) body = t('cloud.notifyNewNote');
+  else body = t('cloud.notifyGeneric');
+  const show = (reg)=>{
+    if(reg && reg.showNotification){
+      reg.showNotification(t('cloud.notifyTitle'), { body, icon: 'icon-192.png', tag: 'mrmahmood-sync' }).catch(()=>{});
+    } else {
+      try{ new Notification(t('cloud.notifyTitle'), { body }); }catch(e){}
+    }
+  };
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(show).catch(()=> show(null));
+  } else {
+    show(null);
+  }
+}
+
+const cloudNotifyToggle = document.getElementById('cloudNotifyToggle');
+if(cloudNotifyToggle){
+  cloudNotifyToggle.checked = loadNotifyPrefFromStorage();
+  cloudNotifyToggle.addEventListener('change', (e)=>{
+    if(!e.target.checked){
+      saveNotifyPrefToStorage(false);
+      return;
+    }
+    if(!('Notification' in window)){
+      showToast(t('cloud.notifyUnsupported'));
+      e.target.checked = false;
+      return;
+    }
+    if(Notification.permission === 'granted'){
+      saveNotifyPrefToStorage(true);
+      showToast(t('cloud.notifyEnabled'));
+      return;
+    }
+    Notification.requestPermission().then((perm)=>{
+      if(perm === 'granted'){
+        saveNotifyPrefToStorage(true);
+        showToast(t('cloud.notifyEnabled'));
+      } else {
+        saveNotifyPrefToStorage(false);
+        e.target.checked = false;
+        showToast(t('cloud.notifyDenied'));
+      }
+    });
+  });
+}
+
+/* =====================================================================
    CURRENCY DISPLAY MODE (USD / OMR toggle from Settings)
    Note: currencyMode and the fmtMoney()/fmtMoneyPlain() helpers that use
    it are defined earlier in the file, right before their first use.
@@ -4892,9 +4993,11 @@ const cloudAuthForm = document.getElementById('cloudAuthForm');
 const cloudConfigNote = document.getElementById('cloudConfigNote');
 
 function updateCloudUI(){
+  const notifyBox = document.getElementById('cloudNotifyBox');
   if(!cloudSyncConfigured){
     cloudStatusBox.style.display = 'none';
     cloudAuthForm.style.display = 'none';
+    notifyBox.style.display = 'none';
     cloudConfigNote.textContent = t('cloud.notConfigured');
     return;
   }
@@ -4902,10 +5005,12 @@ function updateCloudUI(){
   if(cloudUser){
     cloudStatusBox.style.display = 'flex';
     cloudAuthForm.style.display = 'none';
+    notifyBox.style.display = 'flex';
     document.getElementById('cloudStatusText').textContent = t('cloud.loggedInAs', {email: cloudUser.email});
   } else {
     cloudStatusBox.style.display = 'none';
     cloudAuthForm.style.display = 'block';
+    notifyBox.style.display = 'none';
   }
 }
 
@@ -4976,8 +5081,13 @@ function startCloudSync(uid){
   // after signup — see the signup handler.
   cloudUnsubscribe = onSnapshot(docRef, (snap)=>{
     if(snap.exists()){
+      const tradesCountBefore = trades.length;
+      const notesCountBefore = notes.length;
       applyCloudSnapshot(snap.data());
-      if(!firstSnapshot) showToast(t('cloud.synced'));
+      if(!firstSnapshot){
+        showToast(t('cloud.synced'));
+        maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
+      }
     }
     firstSnapshot = false;
   }, (err)=>{
