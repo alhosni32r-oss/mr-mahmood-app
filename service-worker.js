@@ -2,7 +2,7 @@
 // get the latest version when online — the old v1 strategy was cache-first,
 // which meant an installed app could get permanently "stuck" on whatever
 // version was cached the very first time it was installed.
-const CACHE_NAME = 'mr-mahmood-v3';
+const CACHE_NAME = 'mr-mahmood-v4';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -54,9 +54,14 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else (fonts, Chart.js from CDN, etc.): cache-first, since
   // these rarely change and this keeps the app fast and usable offline.
+  // Always resolves to an actual Response — returning undefined here (which
+  // happened when a resource was both uncached AND failed to fetch, e.g.
+  // Firebase's own connectivity-check pixel while offline) is invalid for
+  // respondWith() and throws "Failed to convert value to 'Response'".
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
+      if (cached) return cached;
+      return fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();
@@ -64,8 +69,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cached);
-      return cached || fetchPromise;
+        .catch(() => new Response('', { status: 503, statusText: 'Offline and not cached' }));
     })
   );
 });
