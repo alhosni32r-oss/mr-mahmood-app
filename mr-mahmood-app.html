@@ -1444,7 +1444,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-fix-edit-trade-v15
+        Build: 2026-09-02-storage-full-warning-v16
       </div>
     </div>
   </section>
@@ -1752,6 +1752,7 @@ const TRANSLATIONS = {
     'journal.addTitle': 'إضافة صفقة جديدة', 'journal.addSub': 'سجّل تفاصيل الصفقة بعد إغلاقها',
     'journal.edit': 'تعديل', 'journal.delete': 'حذف',
     'journal.confirmDelete': 'سيتم حذف هذه الصفقة نهائياً من سجلك. هل أنت متأكد؟',
+    'journal.storageFull': '⚠ التخزين المحلي ممتلئ — لم يُحفظ هذا التغيير في هذا الجهاز (غالباً بسبب صورة كبيرة الحجم). إذا كنت مسجّل الدخول للمزامنة السحابية فبياناتك على الأرجح آمنة هناك، وإلا اربط ملف حفظ تلقائي أو صدّر بياناتك فوراً.',
     'imgEditor.title': 'تعديل الصورة',
     'imgEditor.sub': 'اقصص الصورة من حوافها أو ارسم عليها لتمييز نقاط الدخول والخروج',
     'imgEditor.draw': '✏️ رسم', 'imgEditor.crop': '✂️ قص',
@@ -1965,6 +1966,7 @@ const TRANSLATIONS = {
     'journal.addTitle': 'Add New Trade', 'journal.addSub': 'Log the trade details after closing it',
     'journal.edit': 'Edit', 'journal.delete': 'Delete',
     'journal.confirmDelete': 'This trade will be permanently deleted from your journal. Are you sure?',
+    'journal.storageFull': "⚠ Local storage is full — this change wasn't saved on this device (usually caused by a large image). If you're logged in to cloud sync, your data is likely safe there; otherwise link an auto-save file or export your data right away.",
     'imgEditor.title': 'Edit Image',
     'imgEditor.sub': 'Crop the edges or draw on it to mark entry and exit points',
     'imgEditor.draw': '✏️ Draw', 'imgEditor.crop': '✂️ Crop',
@@ -2134,8 +2136,15 @@ try{
 }catch(e){ storageAvailable = false; }
 
 function saveTradesToStorage(){
-  if(!storageAvailable) return;
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); }catch(e){}
+  if(!storageAvailable) return true;
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+    return true;
+  }catch(e){
+    console.warn('saveTradesToStorage failed:', e);
+    showToast(t('journal.storageFull'));
+    return false;
+  }
 }
 function loadTradesFromStorage(){
   if(!storageAvailable) return;
@@ -2166,8 +2175,15 @@ let activeAccountId = null;
 const ACCOUNTS_STORAGE_KEY = 'mrmahmood_accounts_v1';
 
 function saveAccountsToStorage(){
-  if(!storageAvailable) return;
-  try{ localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify({accounts, activeAccountId})); }catch(e){}
+  if(!storageAvailable) return true;
+  try{
+    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify({accounts, activeAccountId}));
+    return true;
+  }catch(e){
+    console.warn('saveAccountsToStorage failed:', e);
+    showToast(t('journal.storageFull'));
+    return false;
+  }
 }
 function loadAccountsFromStorage(){
   if(!storageAvailable) return null;
