@@ -1446,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-listener-merge-fix-v23
+        Build: 2026-09-03-clock-skew-fix-v24
       </div>
     </div>
   </section>
@@ -5258,6 +5258,7 @@ async function pushToCloud(){
     // `await` — reading the global `accounts`/`notes` arrays again LATER in
     // this function isn't safe, since the real-time listener can reassign
     // those same globals while we're mid-flight waiting on the network.
+    lastLocalEditAt = Date.now();
     const intendedAccounts = JSON.parse(JSON.stringify(accounts));
     const intendedNotes = JSON.parse(JSON.stringify(notes));
     const intendedActiveAccountId = activeAccountId;
@@ -5290,6 +5291,50 @@ async function deleteFromCloud(kind, id){
   }
 }
 
+// Tracks when this device last made a local edit — used only by the
+// real-time listener's merge (see mergeAccountsForListener below), not by
+// the push-side merge (which is always safe to trust local unconditionally
+// for THIS device's own just-captured edit).
+let lastLocalEditAt = 0;
+const LISTENER_MERGE_GRACE_MS = 8000;
+
+// Used specifically when the real-time listener receives an update —
+// unlike the plain merge used on push, blindly trusting a LOCAL item's
+// client-side updatedAt over an incoming SERVER item here is unreliable:
+// it compares timestamps from two DIFFERENT devices' own clocks, which
+// are not guaranteed to be in sync. In practice this caused an already-
+// synced device to keep its own older edit merely because its clock read
+// a larger number than the other device's genuinely more recent edit.
+// This only trusts local over the incoming server copy when THIS device
+// itself made an edit within the last few seconds (almost certainly still
+// mid-upload) — otherwise the server's copy simply wins outright, since it
+// represents whatever the authoritative latest combined state already is.
+function mergeItemsByIdForListener(localList, serverList){
+  if((Date.now() - lastLocalEditAt) >= LISTENER_MERGE_GRACE_MS) return serverList || [];
+  return mergeItemsById(localList, serverList);
+}
+function mergeAccountsForListener(localAccounts, serverAccounts){
+  if((Date.now() - lastLocalEditAt) >= LISTENER_MERGE_GRACE_MS) return serverAccounts || localAccounts;
+  const serverById = new Map((serverAccounts || []).map(a => [a.id, a]));
+  const localById = new Map((localAccounts || []).map(a => [a.id, a]));
+  const allIds = new Set([...serverById.keys(), ...localById.keys()]);
+  const merged = [];
+  allIds.forEach(id => {
+    const local = localById.get(id);
+    const server = serverById.get(id);
+    if(local && server){
+      merged.push({
+        ...server, ...local,
+        trades: mergeItemsById(local.trades, server.trades),
+        openPositions: mergeItemsById(local.openPositions, server.openPositions),
+      });
+    } else {
+      merged.push(local || server);
+    }
+  });
+  return merged;
+}
+
 function startCloudSync(uid){
   if(cloudUnsubscribe) cloudUnsubscribe();
   const { doc, collection, onSnapshot } = window.__fsModular;
@@ -5311,8 +5356,8 @@ function startCloudSync(uid){
     const tradesCountBefore = trades.length;
     const notesCountBefore = notes.length;
     const wasFirstSnapshot = firstSnapshot;
-    const mergedAccounts = mergeAccounts(accounts, serverState.accounts);
-    const mergedNotes = mergeItemsById(notes, serverState.notes);
+    const mergedAccounts = mergeAccountsForListener(accounts, serverState.accounts);
+    const mergedNotes = mergeItemsByIdForListener(notes, serverState.notes);
     applyMergedStateLocally(mergedAccounts, mergedNotes, activeAccountId);
     if(!wasFirstSnapshot){
       showToast(t('cloud.synced'));
