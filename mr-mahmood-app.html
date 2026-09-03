@@ -1446,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-per-document-storage-v20
+        Build: 2026-09-03-image-size-safety-v21
       </div>
     </div>
   </section>
@@ -3148,16 +3148,33 @@ document.getElementById('ieResetBtn').addEventListener('click', ()=>{
   document.getElementById('ieCropActions').style.display = 'none';
 });
 
+// Compresses a canvas to JPEG, stepping quality down until the result is
+// safely under maxBytes. This is what actually guarantees a single trade
+// (which can carry a "before" AND "after" image) never risks exceeding
+// Firestore's hard 1 MiB per-document limit — a confirmed real failure
+// mode once "before" and "after" were both high-resolution, lossless PNGs.
+function compressCanvasToSafeSize(canvas, maxBytes){
+  maxBytes = maxBytes || 300000;
+  let quality = 0.92;
+  let dataUrl = canvas.toDataURL('image/jpeg', quality);
+  while(dataUrl.length > maxBytes && quality > 0.3){
+    quality -= 0.1;
+    dataUrl = canvas.toDataURL('image/jpeg', quality);
+  }
+  return dataUrl;
+}
+
 document.getElementById('ieSkipBtn').addEventListener('click', ()=>{
+  // Uses ieCanvas (already holding the loaded — unedited — image) rather
+  // than the raw original file, so "use as-is" gets the exact same
+  // size-safety guarantee as the "save edited" path below.
+  const finalDataUrl = compressCanvasToSafeSize(ieCanvas);
   document.getElementById('imageEditorOverlay').classList.remove('open');
-  if(ieOnSave) ieOnSave(ieOriginalDataUrl);
+  if(ieOnSave) ieOnSave(finalDataUrl);
 });
 
 document.getElementById('ieSaveBtn').addEventListener('click', ()=>{
-  // PNG (lossless) instead of JPEG — chart screenshots are mostly sharp
-  // lines and text, which JPEG's compression visibly blurs; PNG keeps
-  // every pixel exactly as drawn/cropped.
-  const finalDataUrl = ieCanvas.toDataURL('image/png');
+  const finalDataUrl = compressCanvasToSafeSize(ieCanvas);
   document.getElementById('imageEditorOverlay').classList.remove('open');
   if(ieOnSave) ieOnSave(finalDataUrl);
 });
