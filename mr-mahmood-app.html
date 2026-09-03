@@ -46,12 +46,14 @@
     createUserWithEmailAndPassword, signOut, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
-    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    collection, getDocs, writeBatch, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   window.__fsModular = {
     initializeApp,
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail,
     getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    collection, getDocs, writeBatch, deleteDoc,
   };
 </script>
 <style>
@@ -1444,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-02-offline-reconnect-fix-v19
+        Build: 2026-09-02-per-document-storage-v20
       </div>
     </div>
   </section>
@@ -2295,13 +2297,21 @@ function updateAccountBalance(id, balance){
 function deleteAccount(id){
   if(accounts.length <= 1){ showToast(t('accounts.cannotDeleteLast')); return; }
   const wasActive = (activeAccountId === id);
+  const removedAccount = accounts.find(a => a.id === id);
   accounts = accounts.filter(a=>a.id !== id);
+  // Clean up this account's trades/positions from the cloud too, so a
+  // deleted account's data doesn't linger as orphaned documents.
+  if(removedAccount){
+    (removedAccount.trades || []).forEach(tr => deleteFromCloud('trades', tr.id));
+    (removedAccount.openPositions || []).forEach(p => deleteFromCloud('positions', p.id));
+  }
   if(wasActive){
     switchAccount(accounts[0].id);
   } else {
     saveAccountsToStorage();
     renderAccountsSettingsList();
   }
+  pushToCloud();
   showToast(t('accounts.deleted'));
 }
 
@@ -2615,6 +2625,7 @@ function renderNotes(){
 function deleteNote(id){
   notes = notes.filter(n=>n.id !== id);
   syncNotes();
+  deleteFromCloud('notes', id);
   renderNotes();
   showToast(t('notes.deleted'));
 }
@@ -3429,6 +3440,7 @@ function deleteTrade(id){
   trades = trades.filter(t=>t.id !== id);
   saveTradesToStorage();
   syncActiveAccountTrades();
+  deleteFromCloud('trades', id);
   renderDashboard();
   renderJournal();
   showToast(t('toast.tradeDeleted'));
@@ -3550,6 +3562,7 @@ document.getElementById('positionActionForm').addEventListener('submit', (e)=>{
     saveTradesToStorage();
     syncActiveAccountTrades();
     syncActiveAccountPositions();
+    deleteFromCloud('positions', positionActionId);
 
     renderOpenPositions();
     renderDashboard();
@@ -3563,6 +3576,7 @@ function deletePosition(id){
   if(!confirm(t('positions.confirmDelete'))) return;
   openPositions = openPositions.filter(p=>p.id !== id);
   syncActiveAccountPositions();
+  deleteFromCloud('positions', id);
   renderOpenPositions();
   renderDashboard();
   showToast(t('positions.deleted'));
@@ -5084,6 +5098,104 @@ function mergeAccounts(localAccounts, serverAccounts){
   return merged;
 }
 
+// Reads every trade/position/note document plus the lightweight accounts
+// metadata document, and reassembles them into the same {accounts, notes}
+// shape the rest of the app already works with.
+async function fetchServerState(){
+  const { doc, collection, getDoc, getDocs } = window.__fsModular;
+  const uid = cloudUser.uid;
+  const [metaSnap, tradesSnap, positionsSnap, notesSnap] = await Promise.all([
+    getDoc(doc(cloudDb, 'users', uid, 'meta', 'main')),
+    getDocs(collection(cloudDb, 'users', uid, 'trades')),
+    getDocs(collection(cloudDb, 'users', uid, 'positions')),
+    getDocs(collection(cloudDb, 'users', uid, 'notes')),
+  ]);
+  if(!metaSnap.exists()) return null;
+
+  const tradesByAccount = {};
+  tradesSnap.forEach(d => {
+    const data = d.data();
+    (tradesByAccount[data.accountId] = tradesByAccount[data.accountId] || []).push(data);
+  });
+  const positionsByAccount = {};
+  positionsSnap.forEach(d => {
+    const data = d.data();
+    (positionsByAccount[data.accountId] = positionsByAccount[data.accountId] || []).push(data);
+  });
+  const notesList = [];
+  notesSnap.forEach(d => notesList.push(d.data()));
+
+  const meta = metaSnap.data();
+  const accountsFull = (meta.accountsMeta || []).map(am => ({
+    ...am,
+    trades: tradesByAccount[am.id] || [],
+    openPositions: positionsByAccount[am.id] || [],
+  }));
+  return { accounts: accountsFull, notes: notesList, activeAccountId: meta.activeAccountId };
+}
+
+// Applies the current LOCAL state to the app's variables/UI, the same way
+// a snapshot received from the server would be applied — used both after
+// merging on push, and after pulling on the real-time listener.
+function applyMergedStateLocally(mergedAccounts, mergedNotes, newActiveAccountId){
+  accounts = mergedAccounts;
+  notes = mergedNotes;
+  activeAccountId = newActiveAccountId;
+  const activeAcc = accounts.find(a => a.id === activeAccountId) || accounts[0];
+  if(activeAcc){
+    trades = activeAcc.trades;
+    openPositions = activeAcc.openPositions;
+    if(!accounts.find(a => a.id === activeAccountId)) activeAccountId = activeAcc.id;
+  }
+  isApplyingRemoteUpdate = true;
+  try{
+    saveAccountsToStorage();
+    saveNotesToStorage();
+    renderDashboard();
+    renderJournal();
+    renderOpenPositions();
+    renderNotes();
+    renderAccountSwitcher();
+    renderAccountsSettingsList();
+  } finally {
+    isApplyingRemoteUpdate = false;
+  }
+}
+
+// Writes the merged state back to Firestore as ONE document per trade,
+// note, and open position, plus a small metadata document for the
+// accounts list itself (name/balance/risk limit, NOT their trades) — never
+// one giant blob. This is what actually fixes cross-device data loss for
+// image-heavy journals: Firestore hard-caps every single document at 1MiB,
+// and a single trade or two with full-quality "before/after" screenshots
+// was enough to push a combined single-document design over that limit,
+// silently failing every push from that point on.
+async function writeMergedStateToCloud(mergedAccounts, mergedNotes, newActiveAccountId){
+  const { doc, writeBatch, serverTimestamp } = window.__fsModular;
+  const uid = cloudUser.uid;
+  const batch = writeBatch(cloudDb);
+  batch.set(doc(cloudDb, 'users', uid, 'meta', 'main'), {
+    activeAccountId: newActiveAccountId,
+    accountsMeta: mergedAccounts.map(a => {
+      const { trades: _t, openPositions: _p, ...rest } = a;
+      return rest;
+    }),
+    updatedAt: serverTimestamp(),
+  });
+  mergedAccounts.forEach(acc => {
+    (acc.trades || []).forEach(tr => {
+      batch.set(doc(cloudDb, 'users', uid, 'trades', tr.id), { ...tr, accountId: acc.id });
+    });
+    (acc.openPositions || []).forEach(p => {
+      batch.set(doc(cloudDb, 'users', uid, 'positions', p.id), { ...p, accountId: acc.id });
+    });
+  });
+  mergedNotes.forEach(n => {
+    batch.set(doc(cloudDb, 'users', uid, 'notes', n.id), n);
+  });
+  await batch.commit();
+}
+
 async function pushToCloud(){
   if(!cloudSyncConfigured){
     console.warn('pushToCloud skipped: cloud sync not configured');
@@ -5098,111 +5210,71 @@ async function pushToCloud(){
     return;
   }
   try{
-    const { doc, setDoc, getDoc, serverTimestamp } = window.__fsModular;
-    const docRef = doc(cloudDb, 'users', cloudUser.uid, 'data', 'main');
     // Capture exactly what THIS call intends to push, right now, before any
-    // `await` — a plain reference to the global `accounts`/`notes` arrays
-    // is NOT safe here: the real-time listener can fire and reassign those
-    // same globals while we're mid-flight waiting on the network (e.g. an
-    // update arriving from another device), and reading them again later
-    // in this function would then merge/push that stale-relative-to-this-
-    // edit data instead of the change that actually triggered this push.
+    // `await` — reading the global `accounts`/`notes` arrays again LATER in
+    // this function isn't safe, since the real-time listener can reassign
+    // those same globals while we're mid-flight waiting on the network.
     const intendedAccounts = JSON.parse(JSON.stringify(accounts));
     const intendedNotes = JSON.parse(JSON.stringify(notes));
     const intendedActiveAccountId = activeAccountId;
-    // Read the current server state and merge it with the captured local
-    // snapshot, instead of blindly overwriting — protects against this
-    // device's local copy being slightly behind a very recent change made
-    // on another device just moments ago.
-    const serverSnap = await getDoc(docRef);
-    if(serverSnap.exists()){
-      const serverData = serverSnap.data();
-      accounts = mergeAccounts(intendedAccounts, serverData.accounts);
-      notes = mergeItemsById(intendedNotes, serverData.notes);
-      activeAccountId = intendedActiveAccountId;
-      const activeAcc = accounts.find(a => a.id === activeAccountId) || accounts[0];
-      if(activeAcc){
-        trades = activeAcc.trades;
-        openPositions = activeAcc.openPositions;
-        if(!accounts.find(a => a.id === activeAccountId)) activeAccountId = activeAcc.id;
-      }
-      isApplyingRemoteUpdate = true;
-      try{
-        saveAccountsToStorage();
-        saveNotesToStorage();
-        renderDashboard();
-        renderJournal();
-        renderOpenPositions();
-        renderNotes();
-        renderAccountSwitcher();
-        renderAccountsSettingsList();
-      } finally {
-        isApplyingRemoteUpdate = false;
-      }
-    } else {
-      accounts = intendedAccounts;
-      notes = intendedNotes;
-      activeAccountId = intendedActiveAccountId;
-    }
-    await setDoc(docRef, { accounts, activeAccountId, notes, updatedAt: serverTimestamp() });
+
+    const serverState = await fetchServerState();
+    const mergedAccounts = serverState ? mergeAccounts(intendedAccounts, serverState.accounts) : intendedAccounts;
+    const mergedNotes = serverState ? mergeItemsById(intendedNotes, serverState.notes) : intendedNotes;
+
+    applyMergedStateLocally(mergedAccounts, mergedNotes, intendedActiveAccountId);
+    await writeMergedStateToCloud(accounts, notes, activeAccountId);
   }catch(e){
     console.warn('Cloud push failed:', e);
     showToast(t('cloud.pushFailed'));
   }
 }
 
-// Applies a snapshot received FROM Firestore (from this device or another
-// one) to local state, using the same payload handler as import/auto-save
-// read-back, then re-renders every affected screen.
-function applyCloudSnapshot(data){
-  isApplyingRemoteUpdate = true;
+// Explicit, immediate per-item cloud deletes — called directly from the
+// delete handlers (not routed through the general merge/push above, since
+// a merge has no way to tell "this device intentionally deleted this" from
+// "this device just doesn't know about it yet").
+async function deleteFromCloud(kind, id){
+  if(!cloudSyncConfigured || !cloudUser || !cloudDb || !window.__fsModular) return;
   try{
-    if(applyLoadedPayload(data)){
-      saveAccountsToStorage();
-      saveNotesToStorage();
-      renderDashboard();
-      renderJournal();
-      renderOpenPositions();
-      renderNotes();
-      renderAccountSwitcher();
-      renderAccountsSettingsList();
+    const { doc, deleteDoc } = window.__fsModular;
+    if(deleteDoc){
+      await deleteDoc(doc(cloudDb, 'users', cloudUser.uid, kind, id));
     }
-  } finally {
-    isApplyingRemoteUpdate = false;
+  }catch(e){
+    console.warn(`Cloud delete failed (${kind}/${id}):`, e);
   }
 }
 
 function startCloudSync(uid){
   if(cloudUnsubscribe) cloudUnsubscribe();
-  const { doc, onSnapshot } = window.__fsModular;
-  const docRef = doc(cloudDb, 'users', uid, 'data', 'main');
+  const { doc, collection, onSnapshot } = window.__fsModular;
   let firstSnapshot = true;
-  // Note: modular Firestore's exists is a METHOD (snap.exists()), unlike
-  // the compat SDK where it was a plain property (snap.exists).
-  //
-  // Deliberately does NOT auto-push local data just because a snapshot
-  // briefly reports "no data yet" — that used to happen here to seed a
-  // brand-new account, but it also fired on ordinary reconnects (this
-  // function re-runs on every network/visibility recovery), and a
-  // momentary connectivity hiccup reporting "no data" was enough to
-  // overwrite the real cloud state with this device's stale local copy,
-  // silently undoing deletions made on OTHER devices while this one was
-  // offline. Seeding a new account now happens explicitly, once, right
-  // after signup — see the signup handler.
-  cloudUnsubscribe = onSnapshot(docRef, (snap)=>{
-    if(snap.exists()){
-      const tradesCountBefore = trades.length;
-      const notesCountBefore = notes.length;
-      applyCloudSnapshot(snap.data());
-      if(!firstSnapshot){
-        showToast(t('cloud.synced'));
-        maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
-      }
+
+  // Any change to any of these four locations (accounts metadata, trades,
+  // positions, or notes) triggers the SAME "pull everything and merge"
+  // logic used on push — simpler and more robust than hand-patching
+  // individual array entries from each collection's docChanges(), at the
+  // cost of a few extra reads that are negligible at this app's scale.
+  const pullAndApply = async ()=>{
+    if(isApplyingRemoteUpdate) return;
+    const serverState = await fetchServerState();
+    if(!serverState) return;
+    const tradesCountBefore = trades.length;
+    const notesCountBefore = notes.length;
+    applyMergedStateLocally(serverState.accounts, serverState.notes, serverState.activeAccountId);
+    if(!firstSnapshot){
+      showToast(t('cloud.synced'));
+      maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
     }
     firstSnapshot = false;
-  }, (err)=>{
-    console.warn('Cloud listener error:', err);
-  });
+  };
+
+  const unsubMeta = onSnapshot(doc(cloudDb, 'users', uid, 'meta', 'main'), pullAndApply, (err)=>console.warn('Cloud listener error (meta):', err));
+  const unsubTrades = onSnapshot(collection(cloudDb, 'users', uid, 'trades'), pullAndApply, (err)=>console.warn('Cloud listener error (trades):', err));
+  const unsubPositions = onSnapshot(collection(cloudDb, 'users', uid, 'positions'), pullAndApply, (err)=>console.warn('Cloud listener error (positions):', err));
+  const unsubNotes = onSnapshot(collection(cloudDb, 'users', uid, 'notes'), pullAndApply, (err)=>console.warn('Cloud listener error (notes):', err));
+  cloudUnsubscribe = ()=>{ unsubMeta(); unsubTrades(); unsubPositions(); unsubNotes(); };
 }
 
 function stopCloudSync(){
