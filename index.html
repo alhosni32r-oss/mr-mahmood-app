@@ -1446,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-image-error-handling-v22
+        Build: 2026-09-03-listener-merge-fix-v23
       </div>
     </div>
   </section>
@@ -5296,20 +5296,35 @@ function startCloudSync(uid){
   let firstSnapshot = true;
 
   // Any change to any of these four locations (accounts metadata, trades,
-  // positions, or notes) triggers the SAME "pull everything and merge"
-  // logic used on push — simpler and more robust than hand-patching
-  // individual array entries from each collection's docChanges(), at the
-  // cost of a few extra reads that are negligible at this app's scale.
+  // positions, or notes) triggers a pull-and-MERGE — critically, merged
+  // with whatever's currently local, not applied raw. Without the merge
+  // here, this exact function was the actual remaining bug: on a fresh
+  // page load, local state gets correctly loaded from storage first, but
+  // this listener's very first snapshot would then blindly overwrite it
+  // with the server's copy — which is stale whenever a very recent local
+  // edit hadn't finished uploading yet (e.g. the page was reloaded a
+  // moment after saving), silently discarding that edit.
   const pullAndApply = async ()=>{
     if(isApplyingRemoteUpdate) return;
     const serverState = await fetchServerState();
     if(!serverState) return;
     const tradesCountBefore = trades.length;
     const notesCountBefore = notes.length;
-    applyMergedStateLocally(serverState.accounts, serverState.notes, serverState.activeAccountId);
-    if(!firstSnapshot){
+    const wasFirstSnapshot = firstSnapshot;
+    const mergedAccounts = mergeAccounts(accounts, serverState.accounts);
+    const mergedNotes = mergeItemsById(notes, serverState.notes);
+    applyMergedStateLocally(mergedAccounts, mergedNotes, activeAccountId);
+    if(!wasFirstSnapshot){
       showToast(t('cloud.synced'));
       maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
+    } else {
+      // On the very first snapshot after a fresh page load / login, the
+      // merge above may have just preserved a local edit that reached
+      // localStorage but never finished uploading (e.g. the page was
+      // reloaded moments after saving). Push once here so that edit
+      // actually reaches the server too, instead of sitting local-only
+      // until some unrelated future save happens to trigger a push.
+      pushToCloud();
     }
     firstSnapshot = false;
   };
