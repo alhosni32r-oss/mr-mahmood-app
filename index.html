@@ -537,6 +537,11 @@
   .journal-table-wrap#openPositionsWrap table{ min-width:780px; }
   .comment-cell{ max-width:220px; color:var(--muted); font-size:11.5px; }
   .thumb{ width:34px; height:34px; border-radius:7px; object-fit:cover; border:1px solid var(--border); cursor:pointer; }
+  .extra-images-badge{
+    display:inline-flex; align-items:center; gap:3px; background:var(--card-2); border:1px solid var(--border);
+    border-radius:7px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; font-weight:600;
+  }
+  .extra-images-badge:hover{ border-color:var(--purple-soft); }
 
   .period-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:18px; }
 
@@ -1208,7 +1213,7 @@
             <th data-i18n="journal.thDate">التاريخ</th><th data-i18n="journal.thWeek">الأسبوع</th><th data-i18n="journal.thMonth">الشهر</th>
             <th data-i18n="journal.thPair">الزوج</th><th data-i18n="journal.thType">النوع</th><th data-i18n="journal.thLot">اللوت</th>
             <th>SL</th><th>TP</th><th data-i18n="journal.thResult">النتيجة</th><th data-i18n="journal.thPL">الربح/الخسارة</th>
-            <th data-i18n="journal.thComment">التعليق</th><th data-i18n="journal.thBefore">قبل</th><th data-i18n="journal.thAfter">بعد</th><th></th>
+            <th data-i18n="journal.thComment">التعليق</th><th data-i18n="journal.thBefore">قبل</th><th data-i18n="journal.thAfter">بعد</th><th data-i18n="journal.thExtra">إضافية</th><th></th>
           </tr>
         </thead>
         <tbody id="journalBody"></tbody>
@@ -1449,7 +1454,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-image-quality-boost-v27
+        Build: 2026-09-03-multi-image-support-v28
       </div>
     </div>
   </section>
@@ -1490,6 +1495,11 @@
             <img id="fImageAfterPreview" class="file-preview">
             <span class="attach-remove-btn" id="fImageAfterRemoveBtn">×</span>
           </div>
+        </div>
+        <div class="field-group full">
+          <label data-i18n="modal.imgExtra">🖼️ صور إضافية (اختياري — بلا حد أقصى)</label>
+          <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="fImagesExtra" accept="image/*" multiple></div>
+          <div class="attach-gallery" id="fImagesExtraGallery"></div>
         </div>
       </div>
       <div class="modal-actions">
@@ -1762,7 +1772,7 @@ const TRANSLATIONS = {
     'journal.resultLoss': 'خاسرة فقط', 'journal.resultBE': 'متعادلة فقط',
     'journal.thDate': 'التاريخ', 'journal.thWeek': 'الأسبوع', 'journal.thMonth': 'الشهر', 'journal.thPair': 'الزوج',
     'journal.thType': 'النوع', 'journal.thLot': 'اللوت', 'journal.thResult': 'النتيجة', 'journal.thPL': 'الربح/الخسارة',
-    'journal.thComment': 'التعليق', 'journal.thBefore': 'قبل', 'journal.thAfter': 'بعد',
+    'journal.thComment': 'التعليق', 'journal.thBefore': 'قبل', 'journal.thAfter': 'بعد', 'journal.thExtra': 'إضافية',
     'journal.thCount': 'عدد', 'journal.thWins': 'رابحة', 'journal.thLosses': 'خاسرة',
     'journal.thWinRate': 'نسبة النجاح', 'journal.thNetPL': 'صافي الربح',
     'journal.empty': 'لا توجد صفقات بعد — اضغط "إضافة صفقة جديدة" لبدء سجلك',
@@ -1786,6 +1796,7 @@ const TRANSLATIONS = {
     'modal.breakeven': 'متعادلة', 'modal.pl': 'الربح / الخسارة ($)', 'modal.plPlaceholder': 'مثال: 45 أو -20-',
     'modal.comment': 'التعليق / سبب الربح أو الخسارة', 'modal.commentPlaceholder': 'مثال: التزمت بالخطة ودخلت عند تأكيد الاتجاه...',
     'modal.imgBefore': '📥 صورة الدخول (قبل)', 'modal.imgAfter': '📤 صورة الخروج (بعد)',
+    'modal.imgExtra': '🖼️ صور إضافية (اختياري — بلا حد أقصى)',
     'modal.dropHint': 'اسحب صورة هنا أو اضغط للاختيار', 'modal.cancel': 'إلغاء', 'modal.close': 'إغلاق', 'modal.save': 'حفظ الصفقة',
 
     'settings.title': 'الإعدادات', 'settings.subtitle': 'خصّص مظهر التطبيق حسب ما يناسبك',
@@ -1977,7 +1988,7 @@ const TRANSLATIONS = {
     'journal.resultLoss': 'Losses Only', 'journal.resultBE': 'Breakeven Only',
     'journal.thDate': 'Date', 'journal.thWeek': 'Week', 'journal.thMonth': 'Month', 'journal.thPair': 'Pair',
     'journal.thType': 'Side', 'journal.thLot': 'Lot', 'journal.thResult': 'Result', 'journal.thPL': 'P&L',
-    'journal.thComment': 'Comment', 'journal.thBefore': 'Before', 'journal.thAfter': 'After',
+    'journal.thComment': 'Comment', 'journal.thBefore': 'Before', 'journal.thAfter': 'After', 'journal.thExtra': 'Extra',
     'journal.thCount': 'Count', 'journal.thWins': 'Wins', 'journal.thLosses': 'Losses',
     'journal.thWinRate': 'Win Rate', 'journal.thNetPL': 'Net P&L',
     'journal.empty': 'No trades yet — click "Add New Trade" to start your journal',
@@ -2001,6 +2012,7 @@ const TRANSLATIONS = {
     'modal.breakeven': 'Breakeven', 'modal.pl': 'Profit / Loss ($)', 'modal.plPlaceholder': 'e.g. 45 or -20',
     'modal.comment': 'Comment / Reason for Win or Loss', 'modal.commentPlaceholder': "e.g. Followed the plan and entered on trend confirmation...",
     'modal.imgBefore': '📥 Entry Screenshot (Before)', 'modal.imgAfter': '📤 Exit Screenshot (After)',
+    'modal.imgExtra': '🖼️ Additional Images (optional — no limit)',
     'modal.dropHint': 'Drag an image here or click to choose', 'modal.cancel': 'Cancel', 'modal.close': 'Close', 'modal.save': 'Save Trade',
 
     'settings.title': 'Settings', 'settings.subtitle': 'Customize the app appearance to your liking',
@@ -2982,6 +2994,8 @@ function openModal(){
   document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
   resetImagePreview('fImageBeforePreview');
   resetImagePreview('fImageAfterPreview');
+  draftTradeImages = [];
+  renderTradeImagesGallery();
   modalTitle.textContent = t('journal.addTitle');
   modalSub.textContent = t('journal.addSub');
   modalSubmitBtn.textContent = t('modal.save');
@@ -3002,10 +3016,10 @@ function editTrade(id){
   document.getElementById('fPL').value = trade.pl;
   document.getElementById('fComment').value = trade.comment || '';
 
-  const beforePrev = document.getElementById('fImageBeforePreview');
-  const afterPrev = document.getElementById('fImageAfterPreview');
   if(trade.imageBefore){ showImagePreview('fImageBeforePreview', trade.imageBefore); } else { resetImagePreview('fImageBeforePreview'); }
   if(trade.imageAfter){ showImagePreview('fImageAfterPreview', trade.imageAfter); } else { resetImagePreview('fImageAfterPreview'); }
+  draftTradeImages = (trade.images || []).slice();
+  renderTradeImagesGallery();
 
   modalTitle.textContent = t('journal.editTitle');
   modalSub.textContent = t('journal.editSub');
@@ -3284,7 +3298,7 @@ function renderNoteImagesGallery(){
     const item = document.createElement('div');
     item.className = 'attach-gallery-item';
     item.innerHTML = `<img src="${img}"><span class="attach-remove-btn">×</span>`;
-    item.querySelector('img').addEventListener('click', ()=> window.open(img));
+    item.querySelector('img').addEventListener('click', ()=> viewImageFullscreen(img));
     item.querySelector('.attach-remove-btn').addEventListener('click', ()=>{
       draftNoteImages.splice(idx, 1);
       renderNoteImagesGallery();
@@ -3292,6 +3306,56 @@ function renderNoteImagesGallery(){
     wrap.appendChild(item);
   });
 }
+
+// Same pattern as the notes gallery above — an unlimited set of
+// "additional" images per trade, beyond the two labeled before/after slots.
+let draftTradeImages = [];
+
+function renderTradeImagesGallery(){
+  const wrap = document.getElementById('fImagesExtraGallery');
+  wrap.innerHTML = '';
+  draftTradeImages.forEach((img, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'attach-gallery-item';
+    item.innerHTML = `<img src="${img}"><span class="attach-remove-btn">×</span>`;
+    item.querySelector('img').addEventListener('click', ()=> viewImageFullscreen(img));
+    item.querySelector('.attach-remove-btn').addEventListener('click', ()=>{
+      draftTradeImages.splice(idx, 1);
+      renderTradeImagesGallery();
+    });
+    wrap.appendChild(item);
+  });
+}
+
+document.getElementById('fImagesExtra').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if(!files.length) return;
+  let idx = 0;
+  function processNext(){
+    if(idx >= files.length){ renderTradeImagesGallery(); return; }
+    const file = files[idx];
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      openImageEditor(reader.result, (finalDataUrl)=>{
+        draftTradeImages.push(finalDataUrl);
+        idx++;
+        processNext();
+      }, ()=>{
+        idx++;
+        processNext();
+      });
+    };
+    reader.onerror = ()=>{
+      console.warn('Trade extra image FileReader failed for', file.name);
+      showToast(t('imgEditor.loadFailed'));
+      idx++;
+      processNext();
+    };
+    reader.readAsDataURL(file);
+  }
+  processNext();
+});
 
 function renderNoteFilesList(){
   const wrap = document.getElementById('nFilesList');
@@ -3504,6 +3568,7 @@ tradeForm.addEventListener('submit', (e)=>{
     comment: document.getElementById('fComment').value.trim(),
     imageBefore: beforePrev.style.display === 'block' ? beforePrev.src : null,
     imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
+    images: draftTradeImages.slice(),
     updatedAt: Date.now(),
   };
 
@@ -4648,10 +4713,11 @@ function showDayTradesModal(dateKey){
   dayTrades.forEach(tr=>{
     const item = document.createElement('div');
     item.className = 'day-trade-item';
-    const imagesHtml = (tr.imageBefore || tr.imageAfter) ? `
+    const imagesHtml = (tr.imageBefore || tr.imageAfter || (tr.images && tr.images.length)) ? `
       <div class="day-trade-item-images">
         ${tr.imageBefore ? `<img src="${tr.imageBefore}" title="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${tr.imageBefore}')">` : ''}
         ${tr.imageAfter ? `<img src="${tr.imageAfter}" title="${t('modal.imgAfter')}" onclick="viewImageFullscreen('${tr.imageAfter}')">` : ''}
+        ${(tr.images || []).map(img => `<img src="${img}" title="${t('modal.imgExtra')}" onclick="viewImageFullscreen('${img}')">`).join('')}
       </div>` : '';
     item.innerHTML = `
       <div class="day-trade-item-head">
@@ -4824,6 +4890,7 @@ function renderJournal(){
       <td class="comment-cell">${trade.comment ? trade.comment : '—'}</td>
       <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
       <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
+      <td>${(trade.images && trade.images.length) ? `<span class="extra-images-badge" onclick="viewImageFullscreen('${trade.images[0]}')" title="${t('modal.imgExtra')}">🖼️ +${trade.images.length}</span>` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" onclick="editTrade('${trade.id}')">${t('journal.edit')}</button>
