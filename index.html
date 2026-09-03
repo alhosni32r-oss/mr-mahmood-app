@@ -567,6 +567,9 @@
   }
   .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
   .file-preview{ margin-top:10px; max-height:110px; border-radius:8px; display:none; }
+  .file-preview-wrap{ position:relative; display:none; width:fit-content; margin-top:10px; }
+  .file-preview-wrap .file-preview{ margin-top:0; display:block; }
+  .file-preview-wrap .attach-remove-btn{ top:-8px; left:-8px; }
 
   /* ---------------- Image editor ---------------- */
   .img-editor-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
@@ -1446,7 +1449,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-quota-optimization-v25
+        Build: 2026-09-03-remove-image-btn-v26
       </div>
     </div>
   </section>
@@ -1475,12 +1478,18 @@
         <div class="field-group">
           <label data-i18n="modal.imgBefore">📥 صورة الدخول (قبل)</label>
           <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="fImageBefore" accept="image/*"></div>
-          <img id="fImageBeforePreview" class="file-preview">
+          <div class="file-preview-wrap" id="fImageBeforePreviewWrap">
+            <img id="fImageBeforePreview" class="file-preview">
+            <span class="attach-remove-btn" id="fImageBeforeRemoveBtn">×</span>
+          </div>
         </div>
         <div class="field-group">
           <label data-i18n="modal.imgAfter">📤 صورة الخروج (بعد)</label>
           <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="fImageAfter" accept="image/*"></div>
-          <img id="fImageAfterPreview" class="file-preview">
+          <div class="file-preview-wrap" id="fImageAfterPreviewWrap">
+            <img id="fImageAfterPreview" class="file-preview">
+            <span class="attach-remove-btn" id="fImageAfterRemoveBtn">×</span>
+          </div>
         </div>
       </div>
       <div class="modal-actions">
@@ -1549,12 +1558,18 @@
         <div class="field-group">
           <label data-i18n="modal.imgBefore">📥 صورة الدخول (قبل)</label>
           <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="pImageBefore" accept="image/*"></div>
-          <img id="pImageBeforePreview" class="file-preview">
+          <div class="file-preview-wrap" id="pImageBeforePreviewWrap">
+            <img id="pImageBeforePreview" class="file-preview">
+            <span class="attach-remove-btn" id="pImageBeforeRemoveBtn">×</span>
+          </div>
         </div>
         <div class="field-group">
           <label data-i18n="positions.imgAfterLabel">📤 آخر تحديث للصورة (بعد)</label>
           <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="pImageAfter" accept="image/*"></div>
-          <img id="pImageAfterPreview" class="file-preview">
+          <div class="file-preview-wrap" id="pImageAfterPreviewWrap">
+            <img id="pImageAfterPreview" class="file-preview">
+            <span class="attach-remove-btn" id="pImageAfterRemoveBtn">×</span>
+          </div>
         </div>
       </div>
       <div class="modal-actions">
@@ -1590,7 +1605,10 @@
       <div class="field-group">
         <label id="paImageLabel" data-i18n="positions.imgAfterLabel">📤 آخر تحديث للصورة (بعد)</label>
         <div class="file-drop"><span data-i18n="modal.dropHint">اسحب صورة هنا أو اضغط للاختيار</span><input type="file" id="paImage" accept="image/*"></div>
-        <img id="paImagePreview" class="file-preview">
+        <div class="file-preview-wrap" id="paImagePreviewWrap">
+          <img id="paImagePreview" class="file-preview">
+          <span class="attach-remove-btn" id="paImageRemoveBtn">×</span>
+        </div>
       </div>
       <div class="field-group">
         <label id="paCommentLabel" data-i18n="positions.commentLabel">ملاحظة — ماذا حدث؟ (اختياري)</label>
@@ -2932,7 +2950,31 @@ function resetImagePreview(previewId){
   const el = document.getElementById(previewId);
   el.src = '';
   el.style.display = 'none';
+  const wrap = document.getElementById(previewId + 'Wrap');
+  if(wrap) wrap.style.display = 'none';
 }
+
+// Shows an image in one of the before/after preview slots, including the
+// small × remove button — the single place that sets both the <img> src
+// and its wrapper's visibility together, used by every image-attach flow
+// (file picker, editing an existing trade/position) instead of each of
+// them repeating the same two lines.
+function showImagePreview(previewId, dataUrl){
+  const el = document.getElementById(previewId);
+  el.src = dataUrl;
+  el.style.display = 'block';
+  const wrap = document.getElementById(previewId + 'Wrap');
+  if(wrap) wrap.style.display = 'block';
+}
+
+// Wires the × remove button next to a preview image, if one exists for
+// this previewId, to clear just that image (not the whole record).
+function wireRemoveButton(previewId){
+  const btn = document.getElementById(previewId.replace('Preview', '') + 'RemoveBtn');
+  if(btn) btn.addEventListener('click', ()=> resetImagePreview(previewId));
+}
+['fImageBeforePreview','fImageAfterPreview','pImageBeforePreview','pImageAfterPreview','paImagePreview']
+  .forEach(wireRemoveButton);
 
 function openModal(){
   editingId = null;
@@ -2962,8 +3004,8 @@ function editTrade(id){
 
   const beforePrev = document.getElementById('fImageBeforePreview');
   const afterPrev = document.getElementById('fImageAfterPreview');
-  if(trade.imageBefore){ beforePrev.src = trade.imageBefore; beforePrev.style.display = 'block'; } else { resetImagePreview('fImageBeforePreview'); }
-  if(trade.imageAfter){ afterPrev.src = trade.imageAfter; afterPrev.style.display = 'block'; } else { resetImagePreview('fImageAfterPreview'); }
+  if(trade.imageBefore){ showImagePreview('fImageBeforePreview', trade.imageBefore); } else { resetImagePreview('fImageBeforePreview'); }
+  if(trade.imageAfter){ showImagePreview('fImageAfterPreview', trade.imageAfter); } else { resetImagePreview('fImageAfterPreview'); }
 
   modalTitle.textContent = t('journal.editTitle');
   modalSub.textContent = t('journal.editSub');
@@ -3200,9 +3242,7 @@ function wireImageInput(inputId, previewId){
     const reader = new FileReader();
     reader.onload = ()=>{
       openImageEditor(reader.result, (finalDataUrl)=>{
-        const preview = document.getElementById(previewId);
-        preview.src = finalDataUrl;
-        preview.style.display = 'block';
+        showImagePreview(previewId, finalDataUrl);
       });
     };
     reader.onerror = ()=>{
@@ -3522,8 +3562,7 @@ function openPositionActionModal(id, mode){
 
   document.getElementById('paPL').value = pos.unrealizedPL || 0;
   document.getElementById('paComment').value = pos.comment || '';
-  const preview = document.getElementById('paImagePreview');
-  if(pos.imageAfter){ preview.src = pos.imageAfter; preview.style.display = 'block'; }
+  if(pos.imageAfter){ showImagePreview('paImagePreview', pos.imageAfter); }
   else { resetImagePreview('paImagePreview'); }
 
   const title = document.getElementById('paModalTitle');
