@@ -1446,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-clock-skew-fix-v24
+        Build: 2026-09-03-quota-optimization-v25
       </div>
     </div>
   </section>
@@ -5214,30 +5214,67 @@ function applyMergedStateLocally(mergedAccounts, mergedNotes, newActiveAccountId
 // and a single trade or two with full-quality "before/after" screenshots
 // was enough to push a combined single-document design over that limit,
 // silently failing every push from that point on.
-async function writeMergedStateToCloud(mergedAccounts, mergedNotes, newActiveAccountId){
+//
+// Only items that are NEW or actually DIFFERENT from what the server
+// already has get included in the batch — previously this rewrote every
+// single trade/note/position on every save regardless of whether it
+// changed, which burns through Firestore's free-tier daily write quota
+// remarkably fast as a journal grows (confirmed in practice: this exact
+// waste was what exhausted the quota and made saves start failing).
+// serverState (the pre-merge snapshot already fetched by the caller) is
+// used purely for this comparison — never written from directly.
+async function writeMergedStateToCloud(mergedAccounts, mergedNotes, newActiveAccountId, serverState){
   const { doc, writeBatch, serverTimestamp } = window.__fsModular;
   const uid = cloudUser.uid;
   const batch = writeBatch(cloudDb);
-  batch.set(doc(cloudDb, 'users', uid, 'meta', 'main'), {
+
+  const serverTradesById = new Map();
+  const serverPositionsById = new Map();
+  (serverState?.accounts || []).forEach(acc => {
+    (acc.trades || []).forEach(tr => serverTradesById.set(tr.id, tr));
+    (acc.openPositions || []).forEach(p => serverPositionsById.set(p.id, p));
+  });
+  const serverNotesById = new Map((serverState?.notes || []).map(n => [n.id, n]));
+
+  const changed = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
+
+  const newMeta = {
     activeAccountId: newActiveAccountId,
     accountsMeta: mergedAccounts.map(a => {
       const { trades: _t, openPositions: _p, ...rest } = a;
       return rest;
     }),
-    updatedAt: serverTimestamp(),
-  });
+  };
+  const serverMeta = serverState ? { activeAccountId: serverState.activeAccountId, accountsMeta: serverState.accounts.map(a => { const { trades: _t, openPositions: _p, ...rest } = a; return rest; }) } : null;
+  if(!serverState || changed(newMeta, serverMeta)){
+    batch.set(doc(cloudDb, 'users', uid, 'meta', 'main'), { ...newMeta, updatedAt: serverTimestamp() });
+  }
+
+  let writeCount = serverState && !changed(newMeta, serverMeta) ? 0 : 1;
   mergedAccounts.forEach(acc => {
     (acc.trades || []).forEach(tr => {
-      batch.set(doc(cloudDb, 'users', uid, 'trades', tr.id), { ...tr, accountId: acc.id });
+      const withAccount = { ...tr, accountId: acc.id };
+      if(changed(withAccount, serverTradesById.get(tr.id))){
+        batch.set(doc(cloudDb, 'users', uid, 'trades', tr.id), withAccount);
+        writeCount++;
+      }
     });
     (acc.openPositions || []).forEach(p => {
-      batch.set(doc(cloudDb, 'users', uid, 'positions', p.id), { ...p, accountId: acc.id });
+      const withAccount = { ...p, accountId: acc.id };
+      if(changed(withAccount, serverPositionsById.get(p.id))){
+        batch.set(doc(cloudDb, 'users', uid, 'positions', p.id), withAccount);
+        writeCount++;
+      }
     });
   });
   mergedNotes.forEach(n => {
-    batch.set(doc(cloudDb, 'users', uid, 'notes', n.id), n);
+    if(changed(n, serverNotesById.get(n.id))){
+      batch.set(doc(cloudDb, 'users', uid, 'notes', n.id), n);
+      writeCount++;
+    }
   });
-  await batch.commit();
+
+  if(writeCount > 0) await batch.commit();
 }
 
 async function pushToCloud(){
@@ -5268,7 +5305,7 @@ async function pushToCloud(){
     const mergedNotes = serverState ? mergeItemsById(intendedNotes, serverState.notes) : intendedNotes;
 
     applyMergedStateLocally(mergedAccounts, mergedNotes, intendedActiveAccountId);
-    await writeMergedStateToCloud(accounts, notes, activeAccountId);
+    await writeMergedStateToCloud(accounts, notes, activeAccountId, serverState);
   }catch(e){
     console.warn('Cloud push failed:', e);
     showToast(t('cloud.pushFailed'));
