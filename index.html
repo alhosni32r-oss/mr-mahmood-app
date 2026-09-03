@@ -1446,7 +1446,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-image-size-safety-v21
+        Build: 2026-09-03-image-error-handling-v22
       </div>
     </div>
   </section>
@@ -1761,6 +1761,7 @@ const TRANSLATIONS = {
     'imgEditor.undo': '↩️ تراجع', 'imgEditor.reset': '🗑️ إعادة تعيين',
     'imgEditor.applyCrop': 'تطبيق القص على المنطقة المحددة',
     'imgEditor.useAsIs': 'استخدام بدون تعديل', 'imgEditor.save': 'حفظ الصورة المعدَّلة',
+    'imgEditor.loadFailed': '⚠️ تعذّر فتح هذه الصورة — قد تكون كبيرة جداً على هذا الجهاز. جرّب صورة أصغر أو أعد المحاولة.',
 
     'modal.date': 'التاريخ', 'modal.direction': 'نوع الصفقة', 'modal.buy': 'شراء', 'modal.sell': 'بيع',
     'modal.lot': 'حجم اللوت', 'modal.result': 'النتيجة', 'modal.win': 'رابحة', 'modal.loss': 'خاسرة',
@@ -1975,6 +1976,7 @@ const TRANSLATIONS = {
     'imgEditor.undo': '↩️ Undo', 'imgEditor.reset': '🗑️ Reset',
     'imgEditor.applyCrop': 'Apply Crop to Selected Area',
     'imgEditor.useAsIs': 'Use Without Editing', 'imgEditor.save': 'Save Edited Image',
+    'imgEditor.loadFailed': "⚠️ Couldn't open this image — it may be too large for this device. Try a smaller image or try again.",
 
     'modal.date': 'Date', 'modal.direction': 'Trade Type', 'modal.buy': 'Buy', 'modal.sell': 'Sell',
     'modal.lot': 'Lot Size', 'modal.result': 'Result', 'modal.win': 'Win', 'modal.loss': 'Loss',
@@ -2999,7 +3001,7 @@ let ieCleanSnapshot = null; // canvas state without the in-progress crop overlay
 // full original resolution untouched through editing.
 const IE_MAX_DIM = 1800;
 
-function openImageEditor(sourceDataUrl, onSave){
+function openImageEditor(sourceDataUrl, onSave, onError){
   ieOriginalDataUrl = sourceDataUrl;
   ieOnSave = onSave;
   const img = new Image();
@@ -3016,6 +3018,18 @@ function openImageEditor(sourceDataUrl, onSave){
     document.getElementById('ieCropActions').style.display = 'none';
     setIeMode('draw');
     document.getElementById('imageEditorOverlay').classList.add('open');
+  };
+  // Without this, an image that fails to decode (seen in practice with
+  // some Android screenshots — likely a memory/size limit on that device's
+  // browser) failed completely silently: the editor never opened, no
+  // message appeared, and the image field just stayed empty. Now the
+  // person at least gets told clearly instead of wondering what happened,
+  // and callers (like the notes multi-image queue) can move on instead of
+  // stalling forever waiting for a save that will never come.
+  img.onerror = ()=>{
+    console.warn('openImageEditor: image failed to load/decode', sourceDataUrl.slice(0, 50));
+    showToast(t('imgEditor.loadFailed'));
+    if(onError) onError();
   };
   img.src = sourceDataUrl;
 }
@@ -3191,6 +3205,10 @@ function wireImageInput(inputId, previewId){
         preview.style.display = 'block';
       });
     };
+    reader.onerror = ()=>{
+      console.warn('wireImageInput: FileReader failed for', file.name);
+      showToast(t('imgEditor.loadFailed'));
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
   });
@@ -3271,7 +3289,16 @@ document.getElementById('nImages').addEventListener('change', (e)=>{
         draftNoteImages.push(finalDataUrl);
         idx++;
         processNext();
+      }, ()=>{
+        idx++;
+        processNext(); // one bad file shouldn't stall the rest of the queue
       });
+    };
+    reader.onerror = ()=>{
+      console.warn('Notes image FileReader failed for', file.name);
+      showToast(t('imgEditor.loadFailed'));
+      idx++;
+      processNext(); // keep going — one bad file shouldn't stop the rest
     };
     reader.readAsDataURL(file);
   }
