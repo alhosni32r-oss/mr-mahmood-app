@@ -20,6 +20,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- Cloud Sync (optional): Firebase Auth + Firestore, both via the modular
      SDK below (loaded together so they share the same app instance, which
@@ -968,6 +970,10 @@
       <span id="quickToggleLabel">التبديل للوضع النهاري</span>
     </button>
     <div class="data-actions">
+      <button id="exportPdfBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span data-i18n="sidebar.exportPdf">تقرير PDF للمشاركة</span>
+      </button>
       <button id="exportBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
         <span data-i18n="sidebar.export">تصدير البيانات (JSON)</span>
@@ -1093,6 +1099,14 @@
           <div class="perf-row"><span class="k"><span class="dot" style="background:var(--red)"></span><span data-i18n="dash.worstTrade">أسوأ صفقة</span></span><span class="v neg" id="worstTrade">—</span></div>
         </div>
       </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:18px;">
+      <div class="panel-title" style="justify-content:space-between;">
+        <span>📉 <span data-i18n="dash.drawdown">مخطط التراجع (Drawdown)</span></span>
+        <span id="maxDrawdownChip" class="cal-stat-chip" style="color:var(--red)"></span>
+      </div>
+      <div class="equity-canvas-wrap"><canvas id="drawdownChart"></canvas></div>
     </section>
 
     <section class="panel" id="marketsPanel" style="margin-bottom:18px;">
@@ -1513,7 +1527,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-05-calendar-redesign-v30
+        Build: 2026-09-05-pdf-report-v31
       </div>
     </div>
   </section>
@@ -1718,6 +1732,29 @@
 </div>
 
 <!-- ===================== IMAGE EDITOR MODAL ===================== -->
+<!-- Hidden PDF report template — rendered off-screen, snapshotted via
+     html2canvas, then paginated into a PDF via jsPDF. Kept as real DOM
+     (not drawn directly with jsPDF text commands) specifically so Arabic
+     text renders with correct shaping/RTL exactly as it does everywhere
+     else in the app — jsPDF's native text drawing has no Arabic font
+     support, so this sidesteps that entirely. -->
+<div id="pdfReportTemplate" style="position:fixed; top:0; left:-9999px; width:800px; background:#ffffff; color:#1a1a2e; font-family:'Segoe UI',Tahoma,Arial,sans-serif; padding:36px; direction:rtl;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #6C5CE7; padding-bottom:16px; margin-bottom:24px;">
+    <div>
+      <div style="font-size:22px; font-weight:800; color:#1a1a2e;">MR.MAHMOOD</div>
+      <div style="font-size:12px; color:#888;" id="pdfReportSubtitle"></div>
+    </div>
+    <div style="text-align:left; font-size:11px; color:#888;" id="pdfReportMeta"></div>
+  </div>
+  <div id="pdfReportKpis" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:24px;"></div>
+  <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfEquityLabel"></div>
+  <div style="margin-bottom:24px;"><img id="pdfEquityImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
+  <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfDrawdownLabel"></div>
+  <div style="margin-bottom:24px;"><img id="pdfDrawdownImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
+  <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfTradesLabel"></div>
+  <table style="width:100%; border-collapse:collapse; font-size:11px;" id="pdfTradesTable"></table>
+</div>
+
 <div class="modal-overlay" id="imageEditorOverlay">
   <div class="modal" style="max-width:720px;">
     <h2 data-i18n="imgEditor.title">تعديل الصورة</h2>
@@ -1818,6 +1855,7 @@ const TRANSLATIONS = {
     'dash.quickAdd': 'إضافة صفقة سريعة', 'dash.winRate': 'نسبة النجاح',
     'dash.netPL': 'صافي الربح/الخسارة', 'dash.profitFactor': 'عامل الربح (Profit Factor)',
     'dash.totalTrades': 'عدد الصفقات', 'dash.equityCurve': 'منحنى رأس المال (Equity Curve)',
+    'dash.drawdown': 'مخطط التراجع (Drawdown)', 'dash.maxDrawdown': 'أقصى تراجع: {v}',
     'dash.performance': 'الأداء', 'dash.won': 'رابحة', 'dash.bestTrade': 'أفضل صفقة',
     'dash.winPct': 'نسبة الربح', 'dash.lossPct': 'نسبة الخسارة',
     'dash.marketsTraded': 'الأسواق المتداولة',
@@ -1993,6 +2031,10 @@ const TRANSLATIONS = {
     'toast.tradeSaved': 'تم حفظ الصفقة بنجاح', 'toast.tradeUpdated': 'تم حفظ التعديلات بنجاح',
     'toast.tradeDeleted': 'تم حذف الصفقة', 'toast.fileLinked': 'تم ربط الملف — سيتم الحفظ فيه تلقائياً من الآن',
     'toast.autoSaveResumed': 'تم استئناف الحفظ التلقائي', 'toast.dataExported': 'تم تصدير البيانات',
+    'sidebar.exportPdf': 'تقرير PDF للمشاركة',
+    'pdfReport.generating': '⏳ جارٍ تجهيز التقرير...', 'pdfReport.done': '✅ تم تنزيل التقرير بنجاح',
+    'pdfReport.failed': '⚠️ تعذّر إنشاء التقرير — حاول مجدداً', 'pdfReport.noTrades': 'أضف صفقة واحدة على الأقل أولاً لإنشاء تقرير',
+    'pdfReport.generatedOn': 'تم الإنشاء في {date}', 'pdfReport.tradesTable': 'سجل الصفقات (آخر 60 صفقة)',
     'toast.dataImported': 'تم استيراد {n} صفقة', 'toast.importError': 'تعذّر قراءة الملف — تأكد أنه ملف JSON صحيح',
     'toast.dataRestored': 'تم استرجاع {n} صفقة محفوظة', 'toast.appInstalled': 'تم تثبيت التطبيق بنجاح 🎉',
 
@@ -2035,6 +2077,7 @@ const TRANSLATIONS = {
     'dash.quickAdd': 'Quick Add Trade', 'dash.winRate': 'Win Rate',
     'dash.netPL': 'Net P&L', 'dash.profitFactor': 'Profit Factor',
     'dash.totalTrades': 'Total Trades', 'dash.equityCurve': 'Equity Curve',
+    'dash.drawdown': 'Drawdown', 'dash.maxDrawdown': 'Max drawdown: {v}',
     'dash.performance': 'Performance', 'dash.won': 'Won', 'dash.bestTrade': 'Best Trade',
     'dash.winPct': 'Win Rate', 'dash.lossPct': 'Loss Rate',
     'dash.marketsTraded': 'Markets Traded',
@@ -2210,6 +2253,10 @@ const TRANSLATIONS = {
     'toast.tradeSaved': 'Trade saved successfully', 'toast.tradeUpdated': 'Changes saved successfully',
     'toast.tradeDeleted': 'Trade deleted', 'toast.fileLinked': 'File linked — it will now save automatically',
     'toast.autoSaveResumed': 'Auto-save resumed', 'toast.dataExported': 'Data exported',
+    'sidebar.exportPdf': 'Shareable PDF Report',
+    'pdfReport.generating': '⏳ Preparing report...', 'pdfReport.done': '✅ Report downloaded successfully',
+    'pdfReport.failed': "⚠️ Couldn't generate the report — try again", 'pdfReport.noTrades': 'Add at least one trade first to generate a report',
+    'pdfReport.generatedOn': 'Generated on {date}', 'pdfReport.tradesTable': 'Trade Log (last 60 trades)',
     'toast.dataImported': '{n} trades imported', 'toast.importError': "Couldn't read the file — make sure it's a valid JSON file",
     'toast.dataRestored': '{n} saved trades restored', 'toast.appInstalled': 'App installed successfully 🎉',
 
@@ -4091,6 +4138,40 @@ function renderCharts(stats){
     }
   });
 
+  // Drawdown — how far below the running peak (highest equity reached so
+  // far) the account currently sits at each point in time. This is a
+  // standard risk metric: a trader can have a healthy win rate yet still
+  // carry dangerous drawdown risk if losses cluster together. Derived
+  // straight from the same equity curve series above.
+  let runningMax = -Infinity;
+  const ddData = eqData.map(v=>{
+    runningMax = Math.max(runningMax, v);
+    return v - runningMax; // always <= 0
+  });
+  const maxDrawdown = Math.min(...ddData, 0);
+  document.getElementById('maxDrawdownChip').textContent = maxDrawdown < 0
+    ? t('dash.maxDrawdown', {v: fmtMoneyPlain(maxDrawdown)}) : '';
+
+  const ddCanvas = document.getElementById('drawdownChart');
+  const ddCtx = ddCanvas.getContext('2d');
+  const ddGradient = ddCtx.createLinearGradient(0,0,0,210);
+  ddGradient.addColorStop(0, hexToRgba(cRed, 0));
+  ddGradient.addColorStop(1, hexToRgba(cRed, 0.35));
+
+  if(charts.drawdown) charts.drawdown.destroy();
+  charts.drawdown = new Chart(ddCtx, {
+    type:'line',
+    data:{ labels: eqLabels, datasets:[{ data: ddData, borderColor:cRed, backgroundColor:ddGradient,
+      borderWidth:2, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:cRed, tension:0.3, fill:true }]},
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{intersect:false,mode:'index'},
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:cCard2, borderColor:cBorder, borderWidth:1,
+        titleColor:cMuted, bodyColor:cText, padding:10, displayColors:false,
+        callbacks:{ label:(c)=>fmtMoneyPlain(c.parsed.y) } } },
+      scales:{ x:{ ticks:{color:cMuted2, font:{size:10}, maxTicksLimit:7}, grid:{display:false}, border:{color:cBorder} },
+                y:{ ticks:{color:cMuted2, font:{size:10}, callback:(v)=>currencyPrefix()+Math.round(convertAmount(v))+currencySuffix()}, grid:{color:hexToRgba(cBorder,0.6)}, border:{display:false} } }
+    }
+  });
+
   // gauge
   const winPct = stats.total ? stats.winRate*100 : 0;
   if(charts.gauge) charts.gauge.destroy();
@@ -5108,6 +5189,99 @@ function renderPeriodTables(){
 /* =====================================================================
    EXPORT / IMPORT
    ===================================================================== */
+// Builds a shareable PDF performance report: header, KPI summary, equity
+// curve + drawdown charts (reused directly from the live Chart.js
+// instances via toBase64Image), and a trades table. The whole thing is
+// composed as real styled DOM first and snapshotted with html2canvas —
+// rather than drawn with jsPDF's native text commands — specifically so
+// Arabic text renders with correct shaping/RTL exactly as elsewhere in the
+// app; jsPDF's built-in fonts have no Arabic glyph support at all.
+async function generatePdfReport(){
+  const stats = computeStats(trades);
+  const accName = (accounts.find(a=>a.id===activeAccountId) || {}).name || '';
+
+  document.getElementById('pdfReportSubtitle').textContent = accName;
+  document.getElementById('pdfReportMeta').textContent =
+    t('pdfReport.generatedOn', {date: new Date().toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US')});
+
+  const kpis = [
+    { label: t('dash.netPL'), value: fmtMoney(stats.netPL), color: stats.netPL>=0 ? '#16a34a' : '#dc2626' },
+    { label: t('dash.winRate'), value: trades.length ? (stats.winRate*100).toFixed(1)+'%' : '—', color: '#6C5CE7' },
+    { label: t('dash.totalTrades'), value: String(stats.total), color: '#1a1a2e' },
+    { label: t('dash.profitFactor'), value: stats.profitFactor===Infinity ? '∞' : stats.profitFactor.toFixed(2), color: '#1a1a2e' },
+  ];
+  document.getElementById('pdfReportKpis').innerHTML = kpis.map(k=>`
+    <div style="border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
+      <div style="font-size:11px; color:#888; margin-bottom:6px;">${k.label}</div>
+      <div style="font-size:18px; font-weight:800; color:${k.color};">${k.value}</div>
+    </div>
+  `).join('');
+
+  const maxDrawdownText = (document.getElementById('maxDrawdownChip').textContent || '').trim();
+  document.getElementById('pdfEquityLabel').textContent = t('dash.equityCurve');
+  document.getElementById('pdfEquityImg').src = charts.equity ? charts.equity.toBase64Image() : '';
+  document.getElementById('pdfDrawdownLabel').textContent = t('dash.drawdown') + (maxDrawdownText ? ' — ' + maxDrawdownText : '');
+  document.getElementById('pdfDrawdownImg').src = charts.drawdown ? charts.drawdown.toBase64Image() : '';
+
+  document.getElementById('pdfTradesLabel').textContent = t('pdfReport.tradesTable');
+  const sortedTrades = [...trades].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 60);
+  const headerRow = `<tr style="background:#f5f3ff;">
+    <th style="padding:6px; border:1px solid #eee;">${t('journal.thDate')}</th>
+    <th style="padding:6px; border:1px solid #eee;">${t('journal.thPair')}</th>
+    <th style="padding:6px; border:1px solid #eee;">${t('journal.thType')}</th>
+    <th style="padding:6px; border:1px solid #eee;">${t('journal.thResult')}</th>
+    <th style="padding:6px; border:1px solid #eee;">${t('journal.thPL')}</th>
+  </tr>`;
+  const rows = sortedTrades.map(tr => `<tr>
+    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.date}</td>
+    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.pair}</td>
+    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.direction}</td>
+    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.result}</td>
+    <td style="padding:5px; border:1px solid #eee; text-align:center; color:${tr.pl>=0?'#16a34a':'#dc2626'}; font-weight:700;">${fmtMoneyPlain(tr.pl)}</td>
+  </tr>`).join('');
+  document.getElementById('pdfTradesTable').innerHTML = headerRow + rows;
+
+  // Give the chart <img> sources a brief moment to actually paint before
+  // html2canvas snapshots the DOM, since setting .src is asynchronous.
+  await new Promise(resolve => setTimeout(resolve, 200));
+
+  const el = document.getElementById('pdfReportTemplate');
+  const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+  const imgData = canvas.toDataURL('image/png');
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+  while(heightLeft > 0){
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  const accSlug = (accName || 'account').replace(/[^\p{L}\p{N}]+/gu, '-');
+  pdf.save(`mr-mahmood-report-${accSlug}-${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
+  if(!trades.length){ showToast(t('pdfReport.noTrades')); return; }
+  showToast(t('pdfReport.generating'));
+  generatePdfReport()
+    .then(()=> showToast(t('pdfReport.done')))
+    .catch(e=>{
+      console.error('PDF report generation failed:', e);
+      showToast(t('pdfReport.failed'));
+    });
+});
+
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   syncActiveAccountTrades(); // make sure the active account's array is fully up to date first
   const payload = { accounts, activeAccountId, notes, exportedAt: new Date().toISOString() };
