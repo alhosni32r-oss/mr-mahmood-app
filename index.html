@@ -467,12 +467,34 @@
 
 
   .calendar-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
-  .cal-day{ aspect-ratio:1; border-radius:7px; background: var(--card-2); display:flex; align-items:center; justify-content:center; font-size:10px; font-family:var(--mono); color:var(--muted-2); border: 1px solid var(--border); }
-  .cal-day.win{ background: rgba(34,197,94,0.22); color:#B9F5D0; border-color: rgba(34,197,94,0.3);}
-  .cal-day.loss{ background: rgba(251,113,133,0.20); color:#FFD3DA; border-color: rgba(251,113,133,0.28);}
+  .cal-day{
+    min-height:88px; border-radius:14px; background: var(--card-2);
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start;
+    padding:8px 10px 9px; gap:3px; border: 1px solid var(--border);
+  }
+  .cal-day-num{
+    font-size:12.5px; font-weight:700; color:var(--muted-2); font-family:var(--mono);
+    align-self:flex-end; width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+  }
+  .cal-day-num.today{ background:var(--purple); color:#fff; border-radius:50%; }
+  .cal-day-pl{ font-size:16px; font-weight:800; font-family:var(--mono); margin-top:auto; }
+  .cal-day-winrate{ font-size:10.5px; color:var(--muted-2); font-family:var(--mono); }
+  .cal-day.win{ background: rgba(34,197,94,0.14); border-color: rgba(34,197,94,0.25); }
+  .cal-day.win .cal-day-pl{ color: var(--green); }
+  .cal-day.loss{ background: rgba(251,113,133,0.13); border-color: rgba(251,113,133,0.22); }
+  .cal-day.loss .cal-day-pl{ color: var(--red); }
   .cal-day.mixed{
-    background: linear-gradient(135deg, rgba(34,197,94,0.22) 50%, rgba(251,113,133,0.20) 50%);
-    color:#F5EAD0; border-color: rgba(245,192,67,0.4);
+    background: linear-gradient(135deg, rgba(34,197,94,0.16) 50%, rgba(251,113,133,0.15) 50%);
+    border-color: rgba(245,192,67,0.35);
+  }
+  .cal-day.mixed .cal-day-pl{ color: var(--text); }
+  .cal-month-stats{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:12.5px; color:var(--muted);
+  }
+  .cal-month-stats b{ color:var(--text); }
+  .cal-month-stats .cal-stat-chip{
+    background:var(--card-2); border:1px solid var(--border); border-radius:20px; padding:4px 12px;
+    font-family:var(--mono); font-weight:700; font-size:12.5px;
   }
   .cal-nav{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted); font-family:var(--mono); }
   .cal-nav-btn{
@@ -1102,6 +1124,7 @@
             <button class="cal-nav-btn" id="calNextBtn" title="الشهر التالي">›</button>
           </div>
         </div>
+        <div id="calMonthStatsBar" class="cal-month-stats"></div>
         <div id="calWeeksWrap"></div>
         <div class="cal-legend">
           <span><span class="dot" style="background:rgba(34,197,94,0.55)"></span><span data-i18n="dash.winDay">يوم رابح</span></span>
@@ -1490,7 +1513,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-rich-text-notes-v29
+        Build: 2026-09-05-calendar-redesign-v30
       </div>
     </div>
   </section>
@@ -1806,6 +1829,7 @@ const TRANSLATIONS = {
     'dash.calendar': 'تقويم الصفقات', 'dash.winDay': 'يوم رابح', 'dash.lossDay': 'يوم خاسر', 'dash.mixedDay': 'نتيجة متعادلة',
     'dash.prevMonth': 'الشهر السابق', 'dash.nextMonth': 'الشهر التالي',
     'dash.weekN': 'الأسبوع {n}',
+    'dash.monthlyStats': 'إحصائيات الشهر:', 'dash.streakDays': '🔥 {n} أيام متتالية',
     'dash.dow1': 'إث', 'dash.dow2': 'ثلا', 'dash.dow3': 'أرب', 'dash.dow4': 'خم', 'dash.dow5': 'جمعة',
     'dash.start': 'البداية', 'dash.totalTradesLabel': 'إجمالي {n} صفقة', 'dash.tradesCount': '{n} صفقة',
     'dash.recentEmpty': 'لا توجد صفقات بعد — أضف أول صفقة لتظهر هنا',
@@ -2022,6 +2046,7 @@ const TRANSLATIONS = {
     'dash.calendar': 'Trade Calendar', 'dash.winDay': 'Profitable day', 'dash.lossDay': 'Loss day', 'dash.mixedDay': 'Breakeven / mixed result',
     'dash.prevMonth': 'Previous month', 'dash.nextMonth': 'Next month',
     'dash.weekN': 'Week {n}',
+    'dash.monthlyStats': 'Monthly stats:', 'dash.streakDays': '🔥 {n} days streak',
     'dash.dow1': 'Mon', 'dash.dow2': 'Tue', 'dash.dow3': 'Wed', 'dash.dow4': 'Thu', 'dash.dow5': 'Fri',
     'dash.start': 'Start', 'dash.totalTradesLabel': 'Total {n} trades', 'dash.tradesCount': '{n} trades',
     'dash.recentEmpty': 'No trades yet — add your first trade to see it here',
@@ -4861,13 +4886,45 @@ function renderCalendar(){
   document.getElementById('calNextBtn').title = t('dash.nextMonth');
 
   // key trades by exact date (YYYY-MM-DD) so we can look up any day,
-  // including days that spill into the previous/next month's weeks
+  // including days that spill into the previous/next month's weeks.
+  // Also tracks win/total counts per day, needed for the per-cell win
+  // rate shown directly on the calendar now.
   const dayPL = {};
+  const dayWins = {};
+  const dayTotal = {};
   trades.forEach(tr=>{
     dayPL[tr.date] = (dayPL[tr.date] || 0) + tr.pl;
+    dayTotal[tr.date] = (dayTotal[tr.date] || 0) + 1;
+    if(tr.pl > 0) dayWins[tr.date] = (dayWins[tr.date] || 0) + 1;
   });
 
   const fmtKey = (d)=> d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const todayKey = fmtKey(new Date());
+
+  // Monthly total P&L — sum of every day's net result that falls inside
+  // the currently viewed month.
+  let monthlyTotal = 0;
+  Object.keys(dayPL).forEach(key=>{
+    const [y,m] = key.split('-').map(Number);
+    if(y === year && m === month + 1) monthlyTotal += dayPL[key];
+  });
+
+  // Current streak — consecutive most-recent TRADING days (skipping days
+  // with no trades at all, e.g. weekends) that were net profitable,
+  // counted globally across all trades, not just the viewed month.
+  const tradingDaysSorted = Object.keys(dayPL).sort().reverse();
+  let streak = 0;
+  for(const key of tradingDaysSorted){
+    if(dayPL[key] > 0) streak++;
+    else break;
+  }
+
+  const statsBar = document.getElementById('calMonthStatsBar');
+  statsBar.innerHTML = `
+    <span>${t('dash.monthlyStats')}</span>
+    <span class="cal-stat-chip" style="color:${monthlyTotal>=0?'var(--green)':'var(--red)'}">${fmtMoney(monthlyTotal)}</span>
+    ${streak > 0 ? `<span class="cal-stat-chip" style="color:var(--purple-soft)">${t('dash.streakDays', {n: streak})}</span>` : ''}
+  `;
 
   // Trading weeks run Monday–Friday (forex is closed on weekends).
   // Find the Monday on/before the 1st of the month, and the Friday
@@ -4910,7 +4967,12 @@ function renderCalendar(){
       else if(pl < 0){ cls += ' loss'; if(inMonth) net += pl; }
       else if(hasTrades){ cls += ' mixed'; } // net exactly $0 but trades did happen that day
       const clickAttr = hasTrades ? ` onclick="showDayTradesModal('${key}')" style="cursor:pointer;"` : '';
-      daysHtml += `<div class="${cls}"${clickAttr}>${d.getDate()}</div>`;
+      const isToday = key === todayKey;
+      const winRate = hasTrades ? Math.round((dayWins[key] || 0) / dayTotal[key] * 100) : null;
+      daysHtml += `<div class="${cls}"${clickAttr}>
+        <span class="cal-day-num${isToday ? ' today' : ''}">${d.getDate()}</span>
+        ${hasTrades ? `<span class="cal-day-pl">${fmtMoney(pl)}</span><span class="cal-day-winrate">${winRate}%</span>` : ''}
+      </div>`;
     }
 
     // Skip a week block that has no days at all in the viewed month
