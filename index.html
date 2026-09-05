@@ -572,6 +572,42 @@
   }
   .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
   .file-preview{ margin-top:10px; max-height:110px; border-radius:8px; display:none; }
+
+  /* ---------------- Rich text editor (Notes) ---------------- */
+  .rte-toolbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:4px;
+    background:var(--card-2); border:1px solid var(--border); border-bottom:none;
+    border-radius:10px 10px 0 0; padding:6px 8px;
+  }
+  .rte-btn{
+    min-width:30px; height:30px; padding:0 8px; border-radius:6px; border:1px solid transparent;
+    background:transparent; color:var(--text); cursor:pointer; font-size:13px; line-height:1;
+  }
+  .rte-btn:hover{ background:var(--card); border-color:var(--border); }
+  .rte-btn.active{ background:var(--purple); color:#fff; }
+  .rte-sep{ width:1px; height:20px; background:var(--border); margin:0 4px; }
+  .rte-select{
+    height:30px; border-radius:6px; border:1px solid var(--border); background:var(--card);
+    color:var(--text); font-size:12px; padding:0 6px; cursor:pointer;
+  }
+  .rte-color-label{
+    display:flex; align-items:center; gap:3px; font-size:13px; font-weight:700; cursor:pointer;
+    padding:0 4px; height:30px; border-radius:6px;
+  }
+  .rte-color-label:hover{ background:var(--card); }
+  .rte-color-label input[type="color"]{
+    width:18px; height:18px; padding:0; border:none; border-radius:4px; cursor:pointer; background:none;
+  }
+  .rte-highlight-icon{ font-size:14px; }
+  .rte-editor{
+    min-height:120px; max-height:320px; overflow-y:auto; padding:12px 14px;
+    border:1px solid var(--border); border-radius:0 0 10px 10px; background:var(--card);
+    color:var(--text); font-size:14px; line-height:1.7; outline:none;
+  }
+  .rte-editor:focus{ border-color:var(--purple-soft); }
+  .rte-editor:empty::before{ content:attr(data-placeholder); color:var(--muted); }
+  .note-card-text{ line-height:1.7; word-break:break-word; }
+
   .file-preview-wrap{ position:relative; display:none; width:fit-content; margin-top:10px; }
   .file-preview-wrap .file-preview{ margin-top:0; display:block; }
   .file-preview-wrap .attach-remove-btn{ top:-8px; left:-8px; }
@@ -1454,7 +1490,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-03-multi-image-support-v28
+        Build: 2026-09-03-rich-text-notes-v29
       </div>
     </div>
   </section>
@@ -1526,7 +1562,33 @@
       </div>
       <div class="field-group">
         <label data-i18n="notes.fieldText">النص</label>
-        <textarea id="nText" style="min-height:120px;" data-i18n-placeholder="notes.textPlaceholder" placeholder="اكتب ملاحظتك هنا..."></textarea>
+        <div class="rte-toolbar" id="rteToolbar">
+          <button type="button" class="rte-btn" data-cmd="bold" title="غامق"><b>B</b></button>
+          <button type="button" class="rte-btn" data-cmd="italic" title="مائل"><i>I</i></button>
+          <button type="button" class="rte-btn" data-cmd="underline" title="تحته خط"><u>U</u></button>
+          <button type="button" class="rte-btn" data-cmd="strikeThrough" title="يتوسطه خط"><s>S</s></button>
+          <span class="rte-sep"></span>
+          <select class="rte-select" id="rteFontSize" title="حجم الخط">
+            <option value="2">صغير</option>
+            <option value="3" selected>عادي</option>
+            <option value="5">كبير</option>
+            <option value="7">كبير جداً</option>
+          </select>
+          <span class="rte-sep"></span>
+          <label class="rte-color-label" title="لون النص">
+            A<input type="color" id="rteTextColor" value="#1a1a1a">
+          </label>
+          <label class="rte-color-label" title="لون التظليل">
+            <span class="rte-highlight-icon">🖍️</span><input type="color" id="rteHighlightColor" value="#fff59d">
+          </label>
+          <span class="rte-sep"></span>
+          <button type="button" class="rte-btn" data-cmd="justifyRight" title="محاذاة يمين">⇥</button>
+          <button type="button" class="rte-btn" data-cmd="justifyCenter" title="توسيط">↔</button>
+          <button type="button" class="rte-btn" data-cmd="justifyLeft" title="محاذاة يسار">⇤</button>
+          <span class="rte-sep"></span>
+          <button type="button" class="rte-btn" data-cmd="removeFormat" title="إزالة كل التنسيق">✕</button>
+        </div>
+        <div id="nText" class="rte-editor" contenteditable="true" data-i18n-placeholder="notes.textPlaceholder" data-placeholder="اكتب ملاحظتك هنا..."></div>
       </div>
       <div class="field-group">
         <label data-i18n="notes.fieldImages">الصور (يمكن اختيار أكثر من صورة)</label>
@@ -3434,6 +3496,7 @@ document.getElementById('nFiles').addEventListener('change', (e)=>{
 function openNoteModal(){
   editingNoteId = null;
   noteForm.reset();
+  document.getElementById('nText').innerHTML = '';
   draftNoteImages = [];
   draftNoteFiles = [];
   renderNoteImagesGallery();
@@ -3452,7 +3515,7 @@ function editNote(id){
   if(!n) return;
   editingNoteId = id;
   document.getElementById('nTitle').value = n.title || '';
-  document.getElementById('nText').value = n.text || '';
+  document.getElementById('nText').innerHTML = n.text || '';
   draftNoteImages = (n.images || []).slice();
   draftNoteFiles = (n.files || []).slice();
   renderNoteImagesGallery();
@@ -3467,6 +3530,45 @@ function editNote(id){
 
 function closeNoteModal(){ noteModalOverlay.classList.remove('open'); }
 
+// Rich text toolbar for the note editor. Uses document.execCommand — an
+// old API, but still the simplest reliable way to do inline rich-text
+// editing (bold/italic/color/etc.) on a contenteditable element without
+// pulling in a whole third-party editor library, and every major browser
+// (Chrome, Firefox, Safari, Edge) still fully supports it today.
+(function wireRichTextToolbar(){
+  const editor = document.getElementById('nText');
+  const focusEditor = ()=> editor.focus();
+
+  document.querySelectorAll('#rteToolbar .rte-btn[data-cmd]').forEach(btn=>{
+    btn.addEventListener('mousedown', (e)=> e.preventDefault()); // keep editor focus
+    btn.addEventListener('click', ()=>{
+      focusEditor();
+      document.execCommand(btn.dataset.cmd, false, null);
+    });
+  });
+
+  document.getElementById('rteFontSize').addEventListener('change', (e)=>{
+    focusEditor();
+    document.execCommand('fontSize', false, e.target.value);
+  });
+
+  document.getElementById('rteTextColor').addEventListener('input', (e)=>{
+    focusEditor();
+    document.execCommand('foreColor', false, e.target.value);
+  });
+
+  document.getElementById('rteHighlightColor').addEventListener('input', (e)=>{
+    focusEditor();
+    // hiliteColor is the standard command for this, but has historically
+    // been inconsistent on some browser/OS combinations — backColor is a
+    // reliable fallback that does the same thing in practice for inline
+    // selections.
+    if(!document.execCommand('hiliteColor', false, e.target.value)){
+      document.execCommand('backColor', false, e.target.value);
+    }
+  });
+})();
+
 document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
 document.getElementById('cancelNoteModal').addEventListener('click', closeNoteModal);
 noteModalOverlay.addEventListener('click', (e)=>{ if(e.target === noteModalOverlay) closeNoteModal(); });
@@ -3474,8 +3576,10 @@ noteModalOverlay.addEventListener('click', (e)=>{ if(e.target === noteModalOverl
 noteForm.addEventListener('submit', (e)=>{
   e.preventDefault();
   const title = document.getElementById('nTitle').value.trim();
-  const text = document.getElementById('nText').value.trim();
-  if(!title && !text && !draftNoteImages.length && !draftNoteFiles.length){ closeNoteModal(); return; }
+  const nTextEl = document.getElementById('nText');
+  const text = nTextEl.innerHTML.trim();
+  const hasVisibleText = nTextEl.textContent.trim().length > 0;
+  if(!title && !hasVisibleText && !draftNoteImages.length && !draftNoteFiles.length){ closeNoteModal(); return; }
   const note = {
     id: editingNoteId || uid(),
     title, text,
