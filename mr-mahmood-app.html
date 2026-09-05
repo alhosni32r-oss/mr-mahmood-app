@@ -205,11 +205,12 @@
     display:flex; align-items:center; gap:11px;
     padding:9px 12px; border-radius:10px;
     color: var(--muted); font-size:13.5px; font-weight:500;
-    cursor:pointer; transition: background .15s ease, color .15s ease;
+    cursor:pointer; transition: background .15s ease, color .15s ease, transform .1s ease;
     position:relative; border:none; background:none; width:100%; text-align:right;
   }
   .menu-item svg{width:17px; height:17px; flex-shrink:0;}
   .menu-item:hover{background: rgba(255,255,255,0.04); color: var(--text);}
+  .menu-item:active{ transform: scale(0.98); }
   .menu-item.active{ background: rgba(108,92,231,0.16); color: #C9C3FF; }
   .menu-item.active::after{
     content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px;
@@ -221,14 +222,23 @@
     display:flex; align-items:center; gap:8px;
     background:none; border:1px solid var(--border); color:var(--muted);
     font-size:12px; padding:7px 10px; border-radius:8px; cursor:pointer;
+    transition: color .15s ease, border-color .15s ease, transform .1s ease;
   }
   .data-actions button:hover{ color:var(--text); border-color:#3A3A48; }
+  .data-actions button:active{ transform: scale(0.97); }
   .data-actions svg{ width:14px; height:14px; }
 
   /* ---------------- Main ---------------- */
   .main{ flex:1; min-width:0; padding: 28px 34px 60px; max-width: 1400px; }
   .view{ display:none; }
-  .view.active{ display:block; }
+  .view.active{ display:block; animation: viewFadeIn .28s ease; }
+  @keyframes viewFadeIn{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .view.active{ animation: none; }
+  }
 
   .topbar{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 26px; flex-wrap:wrap; gap:14px; }
   .topbar h1{ font-size: 24px; font-weight:800; letter-spacing:-0.01em; margin-bottom:4px;}
@@ -242,22 +252,29 @@
     transition: transform .12s ease, box-shadow .12s ease;
   }
   .btn-primary:hover{ transform: translateY(-1px); }
+  .btn-primary:active{ transform: translateY(0) scale(0.97); box-shadow: 0 4px 12px -6px rgba(108,92,231,0.65); }
   .btn-primary svg{width:15px; height:15px;}
   .btn-ghost{
     background:none; border:1px solid var(--border); color:var(--text);
     padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    transition: border-color .15s ease, transform .12s ease, background .15s ease;
   }
   .btn-ghost:hover{ border-color:#3A3A48; }
+  .btn-ghost:active{ transform: scale(0.97); background: var(--card-2); }
   .btn-danger{
     background:rgba(251,113,133,0.14); color:var(--red); border:1px solid rgba(251,113,133,0.3);
     padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+    transition: background .15s ease, transform .12s ease;
   }
   .btn-edit{
     background:rgba(139,127,255,0.14); color:var(--purple-soft); border:1px solid rgba(139,127,255,0.3);
     padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+    transition: background .15s ease, transform .12s ease;
   }
   .btn-edit:hover{ background:rgba(139,127,255,0.22); }
+  .btn-edit:active{ transform: scale(0.94); }
   .btn-danger:hover{ background:rgba(251,113,133,0.22); }
+  .btn-danger:active{ transform: scale(0.94); }
   .row-actions{ display:flex; gap:6px; white-space:nowrap; }
 
   /* ---------------- Cards / grids ---------------- */
@@ -371,6 +388,8 @@
   table{ width:100%; border-collapse:collapse; }
   thead th{ text-align:right; font-size:10.5px; color:var(--muted-2); font-weight:600; letter-spacing:0.3px; padding: 0 6px 10px; border-bottom:1px solid var(--border); }
   tbody td{ padding:11px 6px; font-size:12.5px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tbody tr{ transition: background .12s ease; }
+  tbody tr:hover{ background: rgba(255,255,255,0.025); }
   tbody tr:last-child td{ border-bottom:none; }
   .pair-cell{ display:flex; align-items:center; gap:9px; font-weight:600; }
   .pair-flag{ width:26px; height:26px; border-radius:7px; background:var(--card-2); display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:var(--muted); flex-shrink:0;}
@@ -1527,7 +1546,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-05-pdf-report-v31
+        Build: 2026-09-05-interaction-polish-v32
       </div>
     </div>
   </section>
