@@ -432,6 +432,37 @@
     display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
   }
   .note-card-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; }
+
+  /* ---------------- Note view modal (expanded sticky note) ---------------- */
+  .note-view-card{
+    position:relative; width:min(560px, 92vw); max-height:85vh; overflow-y:auto;
+    border-radius:20px; padding:28px 28px 24px;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.55);
+    animation: noteViewPop .22s cubic-bezier(.2,.9,.3,1.3);
+  }
+  @keyframes noteViewPop{
+    from{ opacity:0; transform: scale(0.94) translateY(8px); }
+    to{ opacity:1; transform: scale(1) translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){ .note-view-card{ animation:none; } }
+  .note-view-close-x{
+    position:absolute; top:16px; left:16px; width:30px; height:30px; border-radius:50%;
+    border:none; background:rgba(0,0,0,0.08); color:inherit; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition: background .15s ease, transform .1s ease;
+  }
+  .note-view-close-x:hover{ background:rgba(0,0,0,0.16); }
+  .note-view-close-x:active{ transform: scale(0.9); }
+  .note-view-title{ font-size:19px; font-weight:800; margin:2px 40px 2px 0; }
+  .note-view-date{ font-size:11.5px; font-family:var(--mono); opacity:0.6; margin-bottom:16px; }
+  .note-view-text{ font-size:14.5px; line-height:1.85; white-space:pre-wrap; word-break:break-word; margin-bottom:16px; }
+  .note-view-actions{ margin-top:20px; }
+  .note-view-edit-btn{
+    background:rgba(0,0,0,0.1); color:inherit; border:none; padding:9px 22px; border-radius:10px;
+    font-size:13px; font-weight:700; cursor:pointer; transition: background .15s ease, transform .1s ease;
+  }
+  .note-view-edit-btn:hover{ background:rgba(0,0,0,0.18); }
+  .note-view-edit-btn:active{ transform: scale(0.96); }
+
   .note-card-date{ font-size:10.5px; font-family:var(--mono); opacity:0.65; }
   .note-card-actions{ display:flex; gap:6px; }
   .note-card-actions button{
@@ -1546,7 +1577,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-07-note-view-modal-v33
+        Build: 2026-09-07-note-view-styled-v34
       </div>
     </div>
   </section>
@@ -1606,17 +1637,20 @@
 <!-- Read-only "view full note" modal — opened by clicking anywhere on a
      note card (except its images/files/edit/delete controls, which keep
      their own actions). Shows the complete content with no truncation,
-     with a shortcut into the edit modal if the person wants to change it. -->
+     with a shortcut into the edit modal if the person wants to change it.
+     Deliberately styled as the note's own color/personality (an expanded
+     sticky note) rather than a generic white system-dialog look. -->
 <div class="modal-overlay" id="noteViewModalOverlay">
-  <div class="modal" style="max-width:560px;">
-    <h2 id="noteViewTitle" style="margin-bottom:4px;"></h2>
-    <div class="modal-sub" id="noteViewDate" style="margin-bottom:16px;"></div>
-    <div id="noteViewText" style="font-size:14px; line-height:1.8; white-space:pre-wrap; margin-bottom:16px; word-break:break-word;"></div>
-    <div id="noteViewImages" class="note-card-images" style="margin-bottom:12px;"></div>
-    <div id="noteViewFiles" style="margin-bottom:12px;"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn-ghost" id="noteViewCloseBtn" data-i18n="modal.close">إغلاق</button>
-      <button type="button" class="btn-primary" id="noteViewEditBtn" data-i18n="journal.edit">تعديل</button>
+  <div class="note-view-card" id="noteViewCard">
+    <button type="button" class="note-view-close-x" id="noteViewCloseX" aria-label="Close">✕</button>
+    <div class="note-card-icon" id="noteViewIcon">📝</div>
+    <h2 id="noteViewTitle" class="note-view-title"></h2>
+    <div class="note-view-date" id="noteViewDate"></div>
+    <div id="noteViewText" class="note-view-text"></div>
+    <div id="noteViewImages" class="note-card-images"></div>
+    <div id="noteViewFiles"></div>
+    <div class="note-view-actions">
+      <button type="button" class="note-view-edit-btn" id="noteViewEditBtn" data-i18n="journal.edit">تعديل</button>
     </div>
   </div>
 </div>
@@ -2830,6 +2864,11 @@ function renderNotes(){
 function viewNote(id){
   const n = notes.find(x=>x.id===id);
   if(!n) return;
+  const color = noteColorFor(n);
+  const card = document.getElementById('noteViewCard');
+  card.style.background = color.bg;
+  card.style.color = color.text;
+
   document.getElementById('noteViewTitle').textContent = n.title || '';
   document.getElementById('noteViewTitle').style.display = n.title ? 'block' : 'none';
   document.getElementById('noteViewDate').textContent =
@@ -2857,7 +2896,7 @@ function viewNote(id){
   document.getElementById('noteViewModalOverlay').classList.add('open');
 }
 function closeNoteViewModal(){ document.getElementById('noteViewModalOverlay').classList.remove('open'); }
-document.getElementById('noteViewCloseBtn').addEventListener('click', closeNoteViewModal);
+document.getElementById('noteViewCloseX').addEventListener('click', closeNoteViewModal);
 document.getElementById('noteViewModalOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'noteViewModalOverlay') closeNoteViewModal();
 });
