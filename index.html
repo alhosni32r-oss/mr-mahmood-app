@@ -1546,7 +1546,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-05-interaction-polish-v32
+        Build: 2026-09-07-note-view-modal-v33
       </div>
     </div>
   </section>
@@ -1603,6 +1603,24 @@
 </div>
 
 <!-- ===================== ADD/EDIT NOTE MODAL ===================== -->
+<!-- Read-only "view full note" modal — opened by clicking anywhere on a
+     note card (except its images/files/edit/delete controls, which keep
+     their own actions). Shows the complete content with no truncation,
+     with a shortcut into the edit modal if the person wants to change it. -->
+<div class="modal-overlay" id="noteViewModalOverlay">
+  <div class="modal" style="max-width:560px;">
+    <h2 id="noteViewTitle" style="margin-bottom:4px;"></h2>
+    <div class="modal-sub" id="noteViewDate" style="margin-bottom:16px;"></div>
+    <div id="noteViewText" style="font-size:14px; line-height:1.8; white-space:pre-wrap; margin-bottom:16px; word-break:break-word;"></div>
+    <div id="noteViewImages" class="note-card-images" style="margin-bottom:12px;"></div>
+    <div id="noteViewFiles" style="margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="noteViewCloseBtn" data-i18n="modal.close">إغلاق</button>
+      <button type="button" class="btn-primary" id="noteViewEditBtn" data-i18n="journal.edit">تعديل</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="noteModalOverlay">
   <div class="modal">
     <h2 id="noteModalTitle" data-i18n="notes.addTitle">إضافة ملاحظة</h2>
@@ -2775,15 +2793,17 @@ function renderNotes(){
   sorted.forEach(n=>{
     const card = document.createElement('div');
     card.className = 'note-card';
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', ()=> viewNote(n.id));
     const color = noteColorFor(n);
     card.style.background = color.bg;
     card.style.color = color.text;
     const dateStr = new Date(n.createdAt).toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', {year:'numeric', month:'short', day:'numeric'});
     const imagesHtml = (n.images && n.images.length) ? `<div class="note-card-images">${
-      n.images.map(img=>`<img src="${img}" onclick="viewImageFullscreen('${img}')">`).join('')
+      n.images.map(img=>`<img src="${img}" onclick="event.stopPropagation(); viewImageFullscreen('${img}')">`).join('')
     }</div>` : '';
     const filesHtml = (n.files && n.files.length) ? `<div class="note-card-files">${
-      n.files.map((f,idx)=>`<a class="note-card-file-link" href="javascript:void(0)" onclick="downloadNoteFileByIndex('${n.id}', ${idx})">
+      n.files.map((f,idx)=>`<a class="note-card-file-link" href="javascript:void(0)" onclick="event.stopPropagation(); downloadNoteFileByIndex('${n.id}', ${idx})">
         <span class="file-icon">${fileIconFor(f.type||'', f.name)}</span>
         <span class="file-name">${f.name}</span>
         <span class="file-size">${fmtFileSize(f.size||0)}</span>
@@ -2798,14 +2818,49 @@ function renderNotes(){
       <div class="note-card-footer">
         <span class="note-card-date">${dateStr}</span>
         <div class="note-card-actions">
-          <button onclick="editNote('${n.id}')">${t('journal.edit')}</button>
-          <button class="note-delete-btn" onclick="deleteNote('${n.id}')">${t('journal.delete')}</button>
+          <button onclick="event.stopPropagation(); editNote('${n.id}')">${t('journal.edit')}</button>
+          <button class="note-delete-btn" onclick="event.stopPropagation(); deleteNote('${n.id}')">${t('journal.delete')}</button>
         </div>
       </div>
     `;
     grid.appendChild(card);
   });
 }
+
+function viewNote(id){
+  const n = notes.find(x=>x.id===id);
+  if(!n) return;
+  document.getElementById('noteViewTitle').textContent = n.title || '';
+  document.getElementById('noteViewTitle').style.display = n.title ? 'block' : 'none';
+  document.getElementById('noteViewDate').textContent =
+    new Date(n.createdAt).toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', {year:'numeric', month:'short', day:'numeric'});
+  document.getElementById('noteViewText').innerHTML = n.text || '';
+
+  const imagesWrap = document.getElementById('noteViewImages');
+  imagesWrap.innerHTML = (n.images || []).map(img =>
+    `<img src="${img}" onclick="viewImageFullscreen('${img}')">`
+  ).join('');
+
+  const filesWrap = document.getElementById('noteViewFiles');
+  filesWrap.innerHTML = (n.files && n.files.length) ? `<div class="note-card-files">${
+    n.files.map((f,idx)=>`<a class="note-card-file-link" href="javascript:void(0)" onclick="downloadNoteFileByIndex('${n.id}', ${idx})">
+      <span class="file-icon">${fileIconFor(f.type||'', f.name)}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${fmtFileSize(f.size||0)}</span>
+    </a>`).join('')
+  }</div>` : '';
+
+  document.getElementById('noteViewEditBtn').onclick = ()=>{
+    closeNoteViewModal();
+    editNote(id);
+  };
+  document.getElementById('noteViewModalOverlay').classList.add('open');
+}
+function closeNoteViewModal(){ document.getElementById('noteViewModalOverlay').classList.remove('open'); }
+document.getElementById('noteViewCloseBtn').addEventListener('click', closeNoteViewModal);
+document.getElementById('noteViewModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'noteViewModalOverlay') closeNoteViewModal();
+});
 
 function deleteNote(id){
   notes = notes.filter(n=>n.id !== id);
