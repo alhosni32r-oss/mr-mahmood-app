@@ -391,6 +391,15 @@
   tbody tr{ transition: background .12s ease; }
   tbody tr:hover{ background: rgba(255,255,255,0.025); }
   tbody tr:last-child td{ border-bottom:none; }
+  .corr-legend-dot{ display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:middle; margin-left:5px; }
+  .corr-table{ border-collapse:separate; border-spacing:3px; }
+  .corr-table th{ font-size:10.5px; font-weight:700; color:var(--muted-2); padding:4px 6px; text-align:center; white-space:nowrap; }
+  .corr-table th.corr-row-label{ text-align:right; }
+  .corr-cell{
+    width:52px; height:38px; text-align:center; font-family:var(--mono); font-size:11px; font-weight:700;
+    border-radius:6px; vertical-align:middle;
+  }
+  .corr-cell.corr-self{ background:var(--card-2); color:var(--muted-2); }
   .pair-cell{ display:flex; align-items:center; gap:9px; font-weight:600; }
   .pair-flag{ width:26px; height:26px; border-radius:7px; background:var(--card-2); display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:var(--muted); flex-shrink:0;}
   .badge{ font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap;}
@@ -1002,6 +1011,9 @@
     <li><button class="menu-item" data-view="notes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h4"/></svg>
       <span data-i18n="nav.notes">الملاحظات</span></button></li>
+    <li id="correlationMenuItem"><button class="menu-item" data-view="correlation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span data-i18n="nav.correlation">ارتباط الأزواج</span></button></li>
     <li><button class="menu-item" data-view="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
       <span data-i18n="nav.settings">الإعدادات</span></button></li>
@@ -1376,6 +1388,30 @@
     <div class="empty-state" id="notesEmpty" data-i18n="notes.empty">لا توجد ملاحظات بعد — اضغط "إضافة ملاحظة" لتبدأ</div>
   </section>
 
+  <!-- ===================== CORRELATION ===================== -->
+  <section class="view" id="view-correlation">
+    <div class="topbar">
+      <div><h1 data-i18n="corr.title">ارتباط أزواج العملات</h1><p data-i18n="corr.subtitle">مرجع سريع لدرجة ارتباط أهم أزواج الفوركس ببعضها — يساعدك على تجنّب مضاعفة نفس المخاطرة بفتح صفقتين على زوجين مرتبطين تماماً دون قصد</p></div>
+      <button class="btn-ghost" id="corrRefreshBtn" style="padding:9px 16px; font-size:12.5px;">
+        <span id="corrRefreshBtnLabel" data-i18n="corr.refreshNow">🔄 تحديث ببيانات حية</span>
+      </button>
+    </div>
+    <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div class="settings-sub" style="margin-bottom:0;" id="corrDisclaimerText" data-i18n="corr.disclaimer">⚠️ هذه قيم تقريبية شائعة تعكس السلوك التاريخي العام للأزواج على المدى الطويل، وليست بيانات حية أو لحظية — الارتباط الفعلي يتغيّر باستمرار حسب ظروف السوق، فاستخدمها كدليل عام فقط وليس قراراً نهائياً.</div>
+      <span id="corrStatusBadge" class="cal-stat-chip" style="flex-shrink:0;"></span>
+    </div>
+    <div class="panel" style="overflow-x:auto;">
+      <div id="corrMatrixWrap"></div>
+    </div>
+    <div class="panel" style="margin-top:16px; display:flex; gap:18px; flex-wrap:wrap; font-size:12px; color:var(--muted);">
+      <span><span class="corr-legend-dot" style="background:#1a7a4c;"></span> <span data-i18n="corr.strongPos">ارتباط طردي قوي (فوق +0.7)</span></span>
+      <span><span class="corr-legend-dot" style="background:#8fd4b0;"></span> <span data-i18n="corr.moderatePos">ارتباط طردي متوسط</span></span>
+      <span><span class="corr-legend-dot" style="background:var(--card-2);"></span> <span data-i18n="corr.weak">ارتباط ضعيف</span></span>
+      <span><span class="corr-legend-dot" style="background:#f3a6ae;"></span> <span data-i18n="corr.moderateNeg">ارتباط عكسي متوسط</span></span>
+      <span><span class="corr-legend-dot" style="background:#c0334f;"></span> <span data-i18n="corr.strongNeg">ارتباط عكسي قوي (تحت -0.7)</span></span>
+    </div>
+  </section>
+
   <!-- ===================== SETTINGS ===================== -->
   <section class="view" id="view-settings">
     <div class="topbar">
@@ -1487,6 +1523,28 @@
     </div>
 
     <div class="panel settings-section">
+      <h3>📐 <span data-i18n="settings.correlationTitle">ارتباط أزواج العملات</span></h3>
+      <div class="settings-sub" data-i18n="settings.correlationToggleDesc" style="margin-bottom:0;">صفحة مرجعية تعرض درجة الارتباط التقريبي بين أهم أزواج الفوركس، لمساعدتك على تجنّب مضاعفة المخاطرة بصفقتين مرتبطتين دون قصد</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
+        <span style="font-size:13px;" data-i18n="settings.correlationToggleLabel">إظهار في القائمة الجانبية</span>
+        <label class="switch">
+          <input type="checkbox" id="correlationVisibleToggle">
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+      <div style="margin-top:14px;">
+        <label style="font-size:12.5px; display:block; margin-bottom:6px;" data-i18n="settings.correlationApiKeyLabel">مفتاح Twelve Data API (اختياري — لتفعيل بيانات حية بدل التقريبية)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="correlationApiKeyInput" data-i18n-placeholder="settings.correlationApiKeyPlaceholder" placeholder="الصق مفتاحك هنا..." style="flex:1;">
+          <button type="button" class="btn-ghost" id="correlationApiKeySaveBtn" style="padding:8px 16px; font-size:12px;" data-i18n="modal.save">حفظ</button>
+        </div>
+        <div class="settings-sub" style="margin-top:8px; margin-bottom:0;" data-i18n="settings.correlationApiKeyDesc">
+          يُحفظ فقط في هذا المتصفح ولا يُرسل لأي مكان سوى Twelve Data مباشرة عند التحديث. احصل على مفتاح مجاني من twelvedata.com
+        </div>
+      </div>
+    </div>
+
+    <div class="panel settings-section">
       <h3>💰 <span data-i18n="settings.currencyTitle">عملة عرض الأرباح والخسائر</span></h3>
       <div class="settings-sub" data-i18n="settings.currencyDesc" style="margin-bottom:0;">اعرض جميع الأرباح والخسائر في التطبيق بالريال العُماني بدلاً من الدولار — يمكنك الرجوع للدولار في أي وقت من هنا. ملاحظة: حاسبة حجم اللوت تبقى تعمل بالدولار داخلياً لأن قيم النقاط معتمدة عالمياً بالدولار، ويُحوَّل الناتج فقط للعرض.</div>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
@@ -1577,7 +1635,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-07-note-view-styled-v34
+        Build: 2026-09-09-live-correlation-v36
       </div>
     </div>
   </section>
@@ -1886,6 +1944,259 @@ const PAIRS = {
 const CUSTOM_VALUE = "__CUSTOM__";
 
 /* =====================================================================
+   PAIRS CORRELATION (reference matrix, not live data)
+   Approximate long-term typical correlations between the most commonly
+   traded major/cross pairs — sourced from generally well-known forex
+   market behavior, useful as a risk-awareness reference (e.g. avoid
+   unknowingly doubling exposure by trading two tightly correlated pairs
+   at once). These are NOT calculated from live price feeds; the app has
+   no market-data API integration, so a static reference table is the
+   honest, dependency-free option consistent with everything else here.
+   ===================================================================== */
+const CORR_PAIRS = ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY'];
+const CORR_VALUES = {
+  'EUR/USD|GBP/USD': 0.85, 'EUR/USD|USD/JPY': -0.15, 'EUR/USD|USD/CHF': -0.95, 'EUR/USD|AUD/USD': 0.70,
+  'EUR/USD|USD/CAD': -0.60, 'EUR/USD|NZD/USD': 0.65, 'EUR/USD|EUR/GBP': 0.30, 'EUR/USD|EUR/JPY': 0.55, 'EUR/USD|GBP/JPY': 0.35,
+  'GBP/USD|USD/JPY': -0.15, 'GBP/USD|USD/CHF': -0.80, 'GBP/USD|AUD/USD': 0.65, 'GBP/USD|USD/CAD': -0.55,
+  'GBP/USD|NZD/USD': 0.55, 'GBP/USD|EUR/GBP': -0.45, 'GBP/USD|EUR/JPY': 0.45, 'GBP/USD|GBP/JPY': 0.75,
+  'USD/JPY|USD/CHF': 0.55, 'USD/JPY|AUD/USD': 0.20, 'USD/JPY|USD/CAD': 0.15, 'USD/JPY|NZD/USD': 0.15,
+  'USD/JPY|EUR/GBP': -0.05, 'USD/JPY|EUR/JPY': 0.65, 'USD/JPY|GBP/JPY': 0.60,
+  'USD/CHF|AUD/USD': -0.65, 'USD/CHF|USD/CAD': 0.55, 'USD/CHF|NZD/USD': -0.60, 'USD/CHF|EUR/GBP': -0.15,
+  'USD/CHF|EUR/JPY': -0.45, 'USD/CHF|GBP/JPY': -0.35,
+  'AUD/USD|USD/CAD': -0.60, 'AUD/USD|NZD/USD': 0.85, 'AUD/USD|EUR/GBP': 0.10, 'AUD/USD|EUR/JPY': 0.55, 'AUD/USD|GBP/JPY': 0.55,
+  'USD/CAD|NZD/USD': -0.50, 'USD/CAD|EUR/GBP': -0.10, 'USD/CAD|EUR/JPY': -0.35, 'USD/CAD|GBP/JPY': -0.30,
+  'NZD/USD|EUR/GBP': 0.10, 'NZD/USD|EUR/JPY': 0.50, 'NZD/USD|GBP/JPY': 0.50,
+  'EUR/GBP|EUR/JPY': 0.30, 'EUR/GBP|GBP/JPY': -0.25,
+  'EUR/JPY|GBP/JPY': 0.75,
+};
+function getCorrelation(a, b){
+  if(a === b) return 1;
+  const cache = getCorrCache();
+  if(cache && cache.matrix){
+    if(cache.matrix[a+'|'+b] !== undefined) return cache.matrix[a+'|'+b];
+    if(cache.matrix[b+'|'+a] !== undefined) return cache.matrix[b+'|'+a];
+  }
+  if(CORR_VALUES[a+'|'+b] !== undefined) return CORR_VALUES[a+'|'+b];
+  if(CORR_VALUES[b+'|'+a] !== undefined) return CORR_VALUES[b+'|'+a];
+  return 0;
+}
+function corrCellColor(v){
+  if(v >= 0.7) return { bg:'#1a7a4c', fg:'#fff' };
+  if(v >= 0.3) return { bg:'#8fd4b0', fg:'#1a1a1a' };
+  if(v <= -0.7) return { bg:'#c0334f', fg:'#fff' };
+  if(v <= -0.3) return { bg:'#f3a6ae', fg:'#1a1a1a' };
+  return null;
+}
+function renderCorrelationMatrix(){
+  const wrap = document.getElementById('corrMatrixWrap');
+  if(!wrap) return;
+  let html = '<table class="corr-table"><thead><tr><th></th>';
+  CORR_PAIRS.forEach(p => html += `<th>${p}</th>`);
+  html += '</tr></thead><tbody>';
+  CORR_PAIRS.forEach(rowPair => {
+    html += `<tr><th class="corr-row-label">${rowPair}</th>`;
+    CORR_PAIRS.forEach(colPair => {
+      if(rowPair === colPair){
+        html += `<td class="corr-cell corr-self">—</td>`;
+      } else {
+        const v = getCorrelation(rowPair, colPair);
+        const c = corrCellColor(v);
+        const style = c ? `background:${c.bg}; color:${c.fg};` : '';
+        html += `<td class="corr-cell" style="${style}">${v >= 0 ? '+' : ''}${v.toFixed(2)}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+/* ---------------- Live correlation data (optional, Twelve Data API) ----------------
+   The API key is stored ONLY in this browser's localStorage — never
+   embedded in the shipped source, since this file is served publicly
+   from GitHub Pages and anyone could otherwise read a hardcoded key
+   straight out of the page source. Every person who wants live data
+   pastes their own free key in Settings.
+   Correlation is calculated properly here (not fetched pre-computed):
+   pull ~60 days of daily closes per pair, convert to day-over-day %
+   returns, then compute the Pearson correlation coefficient between each
+   pair of return-series. Results are cached for 20 hours so normal use
+   doesn't burn through a free-tier daily quota just from reopening the
+   page — refreshing is a deliberate action via the button, not automatic. */
+const CORR_API_KEY_STORAGE = 'mrmahmood_twelvedata_key_v1';
+const CORR_CACHE_KEY = 'mrmahmood_corr_live_cache_v1';
+const CORR_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+
+function saveCorrApiKey(key){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(CORR_API_KEY_STORAGE, key); }catch(e){}
+}
+function loadCorrApiKey(){
+  if(!storageAvailable) return '';
+  try{ return localStorage.getItem(CORR_API_KEY_STORAGE) || ''; }catch(e){ return ''; }
+}
+function saveCorrCache(entry){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(CORR_CACHE_KEY, JSON.stringify(entry)); }catch(e){}
+}
+function getCorrCache(){
+  if(!storageAvailable) return null;
+  try{
+    const raw = localStorage.getItem(CORR_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function pearsonCorrelation(x, y){
+  const n = Math.min(x.length, y.length);
+  if(n < 5) return null; // too little overlapping data to be meaningful
+  x = x.slice(0, n); y = y.slice(0, n);
+  const meanX = x.reduce((a,b)=>a+b,0)/n;
+  const meanY = y.reduce((a,b)=>a+b,0)/n;
+  let num = 0, denX = 0, denY = 0;
+  for(let i=0;i<n;i++){
+    const dx = x[i]-meanX, dy = y[i]-meanY;
+    num += dx*dy; denX += dx*dx; denY += dy*dy;
+  }
+  if(denX===0 || denY===0) return null;
+  return num / Math.sqrt(denX*denY);
+}
+function closesToReturns(closes){
+  // Twelve Data returns daily candles newest-first by default.
+  const returns = [];
+  for(let i=0; i<closes.length-1; i++){
+    const today = closes[i], yesterday = closes[i+1];
+    if(yesterday) returns.push((today - yesterday) / yesterday);
+  }
+  return returns;
+}
+
+async function fetchLiveCorrelation(force){
+  const apiKey = loadCorrApiKey();
+  if(!apiKey) return { ok:false, reason:'no-key' };
+
+  if(!force){
+    const cached = getCorrCache();
+    if(cached && (Date.now() - cached.fetchedAt) < CORR_CACHE_MAX_AGE_MS){
+      return { ok:true, fromCache:true, fetchedAt: cached.fetchedAt };
+    }
+  }
+
+  try{
+    const symbols = CORR_PAIRS.join(',');
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols)}&interval=1day&outputsize=60&apikey=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if(json.code && json.status === 'error') throw new Error(json.message || 'API error');
+
+    // Handle both possible response shapes defensively: keyed-by-symbol
+    // (the normal multi-symbol shape) or a single flat object (in case
+    // only one symbol's data comes back for any reason).
+    const returnsByPair = {};
+    if(json.values && json.meta){
+      const closes = json.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
+      returnsByPair[json.meta.symbol] = closesToReturns(closes);
+    } else {
+      CORR_PAIRS.forEach(pair=>{
+        const entry = json[pair];
+        if(entry && entry.values && entry.status !== 'error'){
+          const closes = entry.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
+          returnsByPair[pair] = closesToReturns(closes);
+        }
+      });
+    }
+
+    const pairsWithData = Object.keys(returnsByPair);
+    if(pairsWithData.length < 2) throw new Error('Not enough pairs returned usable data');
+
+    const matrix = {};
+    for(let i=0; i<CORR_PAIRS.length; i++){
+      for(let j=i+1; j<CORR_PAIRS.length; j++){
+        const a = CORR_PAIRS[i], b = CORR_PAIRS[j];
+        if(returnsByPair[a] && returnsByPair[b]){
+          const v = pearsonCorrelation(returnsByPair[a], returnsByPair[b]);
+          if(v !== null) matrix[a+'|'+b] = Math.round(v * 100) / 100;
+        }
+      }
+    }
+    if(Object.keys(matrix).length === 0) throw new Error('Could not compute any correlations from the data returned');
+
+    const cacheEntry = { matrix, fetchedAt: Date.now() };
+    saveCorrCache(cacheEntry);
+    return { ok:true, fromCache:false, fetchedAt: cacheEntry.fetchedAt };
+  }catch(e){
+    console.warn('Live correlation fetch failed:', e);
+    return { ok:false, reason:'error', error: e.message };
+  }
+}
+
+function updateCorrStatusBadge(){
+  const badge = document.getElementById('corrStatusBadge');
+  if(!badge) return;
+  const cache = getCorrCache();
+  const isLive = cache && (Date.now() - cache.fetchedAt) < CORR_CACHE_MAX_AGE_MS;
+  if(isLive){
+    const ago = Math.round((Date.now() - cache.fetchedAt) / (60*60*1000));
+    badge.textContent = t('corr.liveBadge', {h: ago});
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.textContent = t('corr.staticBadge');
+    badge.style.color = 'var(--muted-2)';
+  }
+}
+
+document.getElementById('corrRefreshBtn').addEventListener('click', async ()=>{
+  const apiKey = loadCorrApiKey();
+  if(!apiKey){
+    showToast(t('corr.noApiKey'));
+    return;
+  }
+  const label = document.getElementById('corrRefreshBtnLabel');
+  const originalText = label.textContent;
+  label.textContent = t('corr.refreshing');
+  const result = await fetchLiveCorrelation(true);
+  label.textContent = originalText;
+  if(result.ok){
+    showToast(t('corr.refreshSuccess'));
+    renderCorrelationMatrix();
+    updateCorrStatusBadge();
+  } else {
+    showToast(t('corr.refreshFailed'));
+  }
+});
+
+const corrApiKeyInput = document.getElementById('correlationApiKeyInput');
+document.getElementById('correlationApiKeySaveBtn').addEventListener('click', ()=>{
+  saveCorrApiKey(corrApiKeyInput.value.trim());
+  showToast(t('corr.apiKeySaved'));
+});
+
+const CORRELATION_VISIBLE_KEY = 'mrmahmood_correlation_visible_v1';
+function saveCorrelationVisibleToStorage(v){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(CORRELATION_VISIBLE_KEY, v ? '1' : '0'); }catch(e){}
+}
+function loadCorrelationVisibleFromStorage(){
+  if(!storageAvailable) return '1';
+  try{ return localStorage.getItem(CORRELATION_VISIBLE_KEY); }catch(e){ return '1'; }
+}
+function setCorrelationMenuVisible(visible){
+  const item = document.getElementById('correlationMenuItem');
+  if(item) item.style.display = visible ? '' : 'none';
+  const toggle = document.getElementById('correlationVisibleToggle');
+  if(toggle) toggle.checked = visible;
+  saveCorrelationVisibleToStorage(visible);
+  if(!visible){
+    const activeView = document.getElementById('view-correlation');
+    if(activeView && activeView.classList.contains('active')){
+      document.querySelector('.menu-item[data-view="dashboard"]').click();
+    }
+  }
+}
+
+
+/* =====================================================================
    TRANSLATIONS — Arabic / English
    ===================================================================== */
 let currentLang = 'ar';
@@ -1906,6 +2217,22 @@ const TRANSLATIONS = {
     'settings.accountsDesc': 'أنشئ أكثر من حساب مستقل تماماً (مثلاً حساب 1000$ وحساب 2000$) — لكل حساب رأس ماله الخاص وسجل صفقاته الخاص، ولا تختلط بياناتهما أبداً. بدّل بينهم من القائمة الجانبية في أي وقت.',
     'settings.addAccount': 'إضافة حساب جديد',
     'nav.journal': 'سجل التداول', 'nav.settings': 'الإعدادات', 'nav.language': 'اللغة', 'nav.notes': 'الملاحظات',
+    'nav.correlation': 'ارتباط الأزواج',
+    'corr.title': 'ارتباط أزواج العملات', 'corr.subtitle': 'مرجع سريع لدرجة ارتباط أهم أزواج الفوركس ببعضها — يساعدك على تجنّب مضاعفة نفس المخاطرة بفتح صفقتين على زوجين مرتبطين تماماً دون قصد',
+    'corr.disclaimer': '⚠️ هذه قيم تقريبية شائعة تعكس السلوك التاريخي العام للأزواج على المدى الطويل، وليست بيانات حية أو لحظية — الارتباط الفعلي يتغيّر باستمرار حسب ظروف السوق، فاستخدمها كدليل عام فقط وليس قراراً نهائياً.',
+    'corr.strongPos': 'ارتباط طردي قوي (فوق +0.7)', 'corr.moderatePos': 'ارتباط طردي متوسط',
+    'corr.weak': 'ارتباط ضعيف', 'corr.moderateNeg': 'ارتباط عكسي متوسط', 'corr.strongNeg': 'ارتباط عكسي قوي (تحت -0.7)',
+    'settings.correlationTitle': 'ارتباط أزواج العملات',
+    'settings.correlationToggleDesc': 'صفحة مرجعية تعرض درجة الارتباط التقريبي بين أهم أزواج الفوركس، لمساعدتك على تجنّب مضاعفة المخاطرة بصفقتين مرتبطتين دون قصد',
+    'settings.correlationToggleLabel': 'إظهار في القائمة الجانبية',
+    'settings.correlationApiKeyLabel': 'مفتاح Twelve Data API (اختياري — لتفعيل بيانات حية بدل التقريبية)',
+    'settings.correlationApiKeyPlaceholder': 'الصق مفتاحك هنا...',
+    'settings.correlationApiKeyDesc': 'يُحفظ فقط في هذا المتصفح ولا يُرسل لأي مكان سوى Twelve Data مباشرة عند التحديث. احصل على مفتاح مجاني من twelvedata.com',
+    'corr.refreshNow': '🔄 تحديث ببيانات حية', 'corr.refreshing': '⏳ جارٍ الجلب...',
+    'corr.liveBadge': '🟢 بيانات حية — قبل {h} ساعة', 'corr.staticBadge': '📊 قيم تقريبية مرجعية',
+    'corr.noApiKey': 'أضف مفتاح Twelve Data من الإعدادات أولاً لتفعيل البيانات الحية',
+    'corr.refreshSuccess': '✅ تم تحديث بيانات الارتباط بنجاح', 'corr.refreshFailed': '⚠️ تعذّر الجلب — تحقق من المفتاح والاتصال، سيبقى المرجع التقريبي معروضاً',
+    'corr.apiKeySaved': '✅ تم حفظ المفتاح',
     'notes.title': 'الملاحظات', 'notes.subtitle': 'دوّن قواعدك وأفكارك وتذكيراتك، مع إمكانية إرفاق صورة لكل ملاحظة',
     'notes.add': 'إضافة ملاحظة', 'notes.empty': 'لا توجد ملاحظات بعد — اضغط "إضافة ملاحظة" لتبدأ',
     'notes.addTitle': 'إضافة ملاحظة', 'notes.addSub': 'دوّن فكرة، قاعدة تداول، أو تذكيراً لنفسك',
@@ -2128,6 +2455,22 @@ const TRANSLATIONS = {
     'settings.accountsDesc': 'Create more than one fully independent account (e.g. a $1000 account and a $2000 account) — each with its own balance and its own trade history, never mixed. Switch between them any time from the sidebar.',
     'settings.addAccount': 'Add New Account',
     'nav.journal': 'Trade Journal', 'nav.settings': 'Settings', 'nav.language': 'Language', 'nav.notes': 'Notes',
+    'nav.correlation': 'Pairs Correlation',
+    'corr.title': 'Currency Pairs Correlation', 'corr.subtitle': 'A quick reference for how correlated major forex pairs typically are — helps you avoid unintentionally doubling the same risk by opening two positions on tightly correlated pairs',
+    'corr.disclaimer': "⚠️ These are common approximate values reflecting general long-term historical behavior, not live/real-time data — actual correlation shifts constantly with market conditions, so treat this as a general guide rather than a final decision.",
+    'corr.strongPos': 'Strong positive (above +0.7)', 'corr.moderatePos': 'Moderate positive',
+    'corr.weak': 'Weak correlation', 'corr.moderateNeg': 'Moderate negative', 'corr.strongNeg': 'Strong negative (below -0.7)',
+    'settings.correlationTitle': 'Currency Pairs Correlation',
+    'settings.correlationToggleDesc': 'A reference page showing approximate correlation between major forex pairs, helping you avoid unintentionally doubling risk on two correlated pairs',
+    'settings.correlationToggleLabel': 'Show in sidebar menu',
+    'settings.correlationApiKeyLabel': 'Twelve Data API Key (optional — enables live data instead of approximate)',
+    'settings.correlationApiKeyPlaceholder': 'Paste your key here...',
+    'settings.correlationApiKeyDesc': "Saved only in this browser and sent nowhere except Twelve Data directly when refreshing. Get a free key at twelvedata.com",
+    'corr.refreshNow': '🔄 Refresh with Live Data', 'corr.refreshing': '⏳ Fetching...',
+    'corr.liveBadge': '🟢 Live data — {h}h ago', 'corr.staticBadge': '📊 Approximate reference values',
+    'corr.noApiKey': 'Add a Twelve Data API key in Settings first to enable live data',
+    'corr.refreshSuccess': '✅ Correlation data updated successfully', 'corr.refreshFailed': "⚠️ Couldn't fetch — check your key and connection; the approximate reference stays shown",
+    'corr.apiKeySaved': '✅ Key saved',
     'notes.title': 'Notes', 'notes.subtitle': 'Jot down your rules, ideas, and reminders — attach an image to any note',
     'notes.add': 'Add Note', 'notes.empty': 'No notes yet — click "Add Note" to get started',
     'notes.addTitle': 'Add Note', 'notes.addSub': 'Write down an idea, a trading rule, or a reminder',
@@ -3073,6 +3416,7 @@ document.querySelectorAll('.menu-item[data-view]').forEach(btn=>{
     if(btn.dataset.view === 'dashboard') renderDashboard();
     if(btn.dataset.view === 'journal'){ renderJournal(); renderOpenPositions(); }
     if(btn.dataset.view === 'notes') renderNotes();
+    if(btn.dataset.view === 'correlation'){ renderCorrelationMatrix(); updateCorrStatusBadge(); }
   });
 });
 
@@ -4745,6 +5089,13 @@ if(sessionsWidgetToggle){
 
 const savedSessionsVisible = loadSessionsVisibleFromStorage();
 setSessionsWidgetVisible(savedSessionsVisible === '1');
+
+const savedCorrelationVisible = loadCorrelationVisibleFromStorage();
+setCorrelationMenuVisible(savedCorrelationVisible !== '0'); // defaults to visible
+document.getElementById('correlationVisibleToggle').addEventListener('change', (e)=>{
+  setCorrelationMenuVisible(e.target.checked);
+});
+corrApiKeyInput.value = loadCorrApiKey();
 
 /* =====================================================================
    CROSS-DEVICE SYNC NOTIFICATIONS (optional, off by default)
