@@ -1635,7 +1635,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-09-live-correlation-v36
+        Build: 2026-09-09-rate-limit-fix-v37
       </div>
     </div>
   </section>
@@ -2071,7 +2071,37 @@ function closesToReturns(closes){
   return returns;
 }
 
-async function fetchLiveCorrelation(force){
+async function fetchSymbolBatch(pairs, apiKey){
+  const symbols = pairs.join(',');
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols)}&interval=1day&outputsize=60&apikey=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  if(res.status === 429){
+    const err = new Error('HTTP 429 - rate limited');
+    err.isRateLimit = true;
+    throw err;
+  }
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if(json.code && json.status === 'error') throw new Error(json.message || 'API error');
+
+  const returnsByPair = {};
+  if(json.values && json.meta){
+    const closes = json.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
+    returnsByPair[json.meta.symbol] = closesToReturns(closes);
+  } else {
+    pairs.forEach(pair=>{
+      const entry = json[pair];
+      if(entry && entry.values && entry.status !== 'error'){
+        const closes = entry.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
+        returnsByPair[pair] = closesToReturns(closes);
+      }
+    });
+  }
+  return returnsByPair;
+}
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function fetchLiveCorrelation(force, onProgress){
   const apiKey = loadCorrApiKey();
   if(!apiKey) return { ok:false, reason:'no-key' };
 
@@ -2082,29 +2112,38 @@ async function fetchLiveCorrelation(force){
     }
   }
 
-  try{
-    const symbols = CORR_PAIRS.join(',');
-    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols)}&interval=1day&outputsize=60&apikey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    if(json.code && json.status === 'error') throw new Error(json.message || 'API error');
+  // Twelve Data's free tier caps requests per minute, and each symbol in a
+  // batched call counts toward that — asking for all 10 pairs in a single
+  // call was enough to trip a 429 (confirmed in practice). Splitting into
+  // smaller batches with a short pause between them, plus one backed-off
+  // retry specifically for a 429, stays safely under a typical free-tier
+  // per-minute limit.
+  const BATCH_SIZE = 4;
+  const batches = [];
+  for(let i=0; i<CORR_PAIRS.length; i+=BATCH_SIZE){
+    batches.push(CORR_PAIRS.slice(i, i+BATCH_SIZE));
+  }
 
-    // Handle both possible response shapes defensively: keyed-by-symbol
-    // (the normal multi-symbol shape) or a single flat object (in case
-    // only one symbol's data comes back for any reason).
-    const returnsByPair = {};
-    if(json.values && json.meta){
-      const closes = json.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
-      returnsByPair[json.meta.symbol] = closesToReturns(closes);
-    } else {
-      CORR_PAIRS.forEach(pair=>{
-        const entry = json[pair];
-        if(entry && entry.values && entry.status !== 'error'){
-          const closes = entry.values.map(v => parseFloat(v.close)).filter(v => !isNaN(v));
-          returnsByPair[pair] = closesToReturns(closes);
+  const returnsByPair = {};
+  try{
+    for(let b=0; b<batches.length; b++){
+      if(onProgress) onProgress(b+1, batches.length);
+      let attempt = 0;
+      while(true){
+        try{
+          const batchResult = await fetchSymbolBatch(batches[b], apiKey);
+          Object.assign(returnsByPair, batchResult);
+          break;
+        }catch(e){
+          if(e.isRateLimit && attempt < 1){
+            attempt++;
+            await sleep(15000); // back off and retry this batch once
+            continue;
+          }
+          throw e;
         }
-      });
+      }
+      if(b < batches.length - 1) await sleep(3000); // pace out requests
     }
 
     const pairsWithData = Object.keys(returnsByPair);
@@ -2113,10 +2152,10 @@ async function fetchLiveCorrelation(force){
     const matrix = {};
     for(let i=0; i<CORR_PAIRS.length; i++){
       for(let j=i+1; j<CORR_PAIRS.length; j++){
-        const a = CORR_PAIRS[i], b = CORR_PAIRS[j];
-        if(returnsByPair[a] && returnsByPair[b]){
-          const v = pearsonCorrelation(returnsByPair[a], returnsByPair[b]);
-          if(v !== null) matrix[a+'|'+b] = Math.round(v * 100) / 100;
+        const a = CORR_PAIRS[i], b2 = CORR_PAIRS[j];
+        if(returnsByPair[a] && returnsByPair[b2]){
+          const v = pearsonCorrelation(returnsByPair[a], returnsByPair[b2]);
+          if(v !== null) matrix[a+'|'+b2] = Math.round(v * 100) / 100;
         }
       }
     }
@@ -2152,11 +2191,16 @@ document.getElementById('corrRefreshBtn').addEventListener('click', async ()=>{
     showToast(t('corr.noApiKey'));
     return;
   }
+  const btn = document.getElementById('corrRefreshBtn');
   const label = document.getElementById('corrRefreshBtnLabel');
   const originalText = label.textContent;
+  btn.disabled = true;
   label.textContent = t('corr.refreshing');
-  const result = await fetchLiveCorrelation(true);
+  const result = await fetchLiveCorrelation(true, (batchNum, totalBatches)=>{
+    label.textContent = t('corr.refreshingBatch', {n: batchNum, total: totalBatches});
+  });
   label.textContent = originalText;
+  btn.disabled = false;
   if(result.ok){
     showToast(t('corr.refreshSuccess'));
     renderCorrelationMatrix();
@@ -2229,6 +2273,7 @@ const TRANSLATIONS = {
     'settings.correlationApiKeyPlaceholder': 'الصق مفتاحك هنا...',
     'settings.correlationApiKeyDesc': 'يُحفظ فقط في هذا المتصفح ولا يُرسل لأي مكان سوى Twelve Data مباشرة عند التحديث. احصل على مفتاح مجاني من twelvedata.com',
     'corr.refreshNow': '🔄 تحديث ببيانات حية', 'corr.refreshing': '⏳ جارٍ الجلب...',
+    'corr.refreshingBatch': '⏳ جارٍ الجلب... ({n}/{total})',
     'corr.liveBadge': '🟢 بيانات حية — قبل {h} ساعة', 'corr.staticBadge': '📊 قيم تقريبية مرجعية',
     'corr.noApiKey': 'أضف مفتاح Twelve Data من الإعدادات أولاً لتفعيل البيانات الحية',
     'corr.refreshSuccess': '✅ تم تحديث بيانات الارتباط بنجاح', 'corr.refreshFailed': '⚠️ تعذّر الجلب — تحقق من المفتاح والاتصال، سيبقى المرجع التقريبي معروضاً',
@@ -2467,6 +2512,7 @@ const TRANSLATIONS = {
     'settings.correlationApiKeyPlaceholder': 'Paste your key here...',
     'settings.correlationApiKeyDesc': "Saved only in this browser and sent nowhere except Twelve Data directly when refreshing. Get a free key at twelvedata.com",
     'corr.refreshNow': '🔄 Refresh with Live Data', 'corr.refreshing': '⏳ Fetching...',
+    'corr.refreshingBatch': '⏳ Fetching... ({n}/{total})',
     'corr.liveBadge': '🟢 Live data — {h}h ago', 'corr.staticBadge': '📊 Approximate reference values',
     'corr.noApiKey': 'Add a Twelve Data API key in Settings first to enable live data',
     'corr.refreshSuccess': '✅ Correlation data updated successfully', 'corr.refreshFailed': "⚠️ Couldn't fetch — check your key and connection; the approximate reference stays shown",
