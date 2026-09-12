@@ -1670,7 +1670,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-12-pdf-customization-v40
+        Build: 2026-09-12-pdf-charts-images-v41
       </div>
     </div>
   </section>
@@ -1915,6 +1915,20 @@
       <select id="pdfPeriodSelect"></select>
     </div>
     <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
+      <span style="font-size:13px;" data-i18n="pdfOptions.includeEquity">تضمين منحنى رأس المال (Equity Curve)</span>
+      <label class="switch">
+        <input type="checkbox" id="pdfIncludeEquityToggle" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </div>
+    <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
+      <span style="font-size:13px;" data-i18n="pdfOptions.includeDrawdown">تضمين مخطط التراجع (Drawdown)</span>
+      <label class="switch">
+        <input type="checkbox" id="pdfIncludeDrawdownToggle" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </div>
+    <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
       <span style="font-size:13px;" data-i18n="pdfOptions.includeComments">تضمين تعليقات الصفقات</span>
       <label class="switch">
         <input type="checkbox" id="pdfIncludeCommentsToggle" checked>
@@ -1945,10 +1959,14 @@
     <div style="text-align:left; font-size:11px; color:#888;" id="pdfReportMeta"></div>
   </div>
   <div id="pdfReportKpis" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:24px;"></div>
-  <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfEquityLabel"></div>
-  <div style="margin-bottom:24px;"><img id="pdfEquityImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
-  <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfDrawdownLabel"></div>
-  <div style="margin-bottom:24px;"><img id="pdfDrawdownImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
+  <div id="pdfEquitySection">
+    <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfEquityLabel"></div>
+    <div style="margin-bottom:24px;"><img id="pdfEquityImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
+  </div>
+  <div id="pdfDrawdownSection">
+    <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfDrawdownLabel"></div>
+    <div style="margin-bottom:24px;"><img id="pdfDrawdownImg" style="width:100%; border:1px solid #eee; border-radius:8px;"></div>
+  </div>
   <div style="margin-bottom:10px; font-size:14px; font-weight:700;" id="pdfTradesLabel"></div>
   <table style="width:100%; border-collapse:collapse; font-size:11px;" id="pdfTradesTable"></table>
 </div>
@@ -2515,6 +2533,7 @@ const TRANSLATIONS = {
     'pdfReport.generating': '⏳ جارٍ تجهيز التقرير...', 'pdfReport.done': '✅ تم تنزيل التقرير بنجاح',
     'pdfOptions.title': 'تخصيص تقرير PDF', 'pdfOptions.subtitle': 'اختر الفترة والتفاصيل التي تريد تضمينها قبل إنشاء التقرير',
     'pdfOptions.period': 'الفترة الزمنية', 'pdfOptions.allTime': 'كل الفترات',
+    'pdfOptions.includeEquity': 'تضمين منحنى رأس المال (Equity Curve)', 'pdfOptions.includeDrawdown': 'تضمين مخطط التراجع (Drawdown)',
     'pdfOptions.includeComments': 'تضمين تعليقات الصفقات', 'pdfOptions.includeImages': 'تضمين صور الصفقات (قبل/بعد)',
     'pdfOptions.imagesNote': 'تضمين الصور يجعل التقرير أكبر حجماً وأطول صفحات، وقد يستغرق إنشاؤه وقتاً أطول قليلاً',
     'pdfOptions.generate': 'إنشاء التقرير',
@@ -2764,6 +2783,7 @@ const TRANSLATIONS = {
     'pdfReport.generating': '⏳ Preparing report...', 'pdfReport.done': '✅ Report downloaded successfully',
     'pdfOptions.title': 'Customize PDF Report', 'pdfOptions.subtitle': 'Choose the period and details to include before generating the report',
     'pdfOptions.period': 'Time Period', 'pdfOptions.allTime': 'All Time',
+    'pdfOptions.includeEquity': 'Include Equity Curve', 'pdfOptions.includeDrawdown': 'Include Drawdown Chart',
     'pdfOptions.includeComments': 'Include trade comments', 'pdfOptions.includeImages': 'Include trade images (before/after)',
     'pdfOptions.imagesNote': 'Including images makes the report larger and longer, and may take a bit more time to generate',
     'pdfOptions.generate': 'Generate Report',
@@ -5759,7 +5779,7 @@ function renderPeriodTables(){
 // Arabic text renders with correct shaping/RTL exactly as elsewhere in the
 // app; jsPDF's built-in fonts have no Arabic glyph support at all.
 async function generatePdfReport(options){
-  options = options || { period: 'all', includeComments: true, includeImages: false };
+  options = options || { period: 'all', includeComments: true, includeImages: false, includeEquity: true, includeDrawdown: true };
   const filteredTrades = options.period === 'all'
     ? trades
     : trades.filter(tr => tr.date.slice(0,7) === options.period);
@@ -5788,8 +5808,10 @@ async function generatePdfReport(options){
   `).join('');
 
   const maxDrawdownText = (document.getElementById('maxDrawdownChip').textContent || '').trim();
+  document.getElementById('pdfEquitySection').style.display = options.includeEquity ? 'block' : 'none';
   document.getElementById('pdfEquityLabel').textContent = t('dash.equityCurve');
   document.getElementById('pdfEquityImg').src = charts.equity ? charts.equity.toBase64Image() : '';
+  document.getElementById('pdfDrawdownSection').style.display = options.includeDrawdown ? 'block' : 'none';
   document.getElementById('pdfDrawdownLabel').textContent = t('dash.drawdown') + (maxDrawdownText ? ' — ' + maxDrawdownText : '');
   document.getElementById('pdfDrawdownImg').src = charts.drawdown ? charts.drawdown.toBase64Image() : '';
 
@@ -5810,8 +5832,8 @@ async function generatePdfReport(options){
       ? `<td style="padding:5px; border:1px solid #eee; text-align:right; font-size:10px;">${tr.comment || ''}</td>` : '';
     const imagesTd = options.includeImages
       ? `<td style="padding:5px; border:1px solid #eee; text-align:center;">
-          ${tr.imageBefore ? `<img src="${tr.imageBefore}" style="max-width:70px; max-height:50px; border-radius:4px; margin:1px;">` : ''}
-          ${tr.imageAfter ? `<img src="${tr.imageAfter}" style="max-width:70px; max-height:50px; border-radius:4px; margin:1px;">` : ''}
+          ${tr.imageBefore ? `<div style="font-size:9px; color:#888; margin-bottom:2px;">${t('modal.imgBefore')}</div><img src="${tr.imageBefore}" style="max-width:160px; max-height:120px; border-radius:5px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">` : ''}
+          ${tr.imageAfter ? `<div style="font-size:9px; color:#888; margin-bottom:2px;">${t('modal.imgAfter')}</div><img src="${tr.imageAfter}" style="max-width:160px; max-height:120px; border-radius:5px; display:block; margin-left:auto; margin-right:auto;">` : ''}
         </td>` : '';
     return `<tr>
       <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.date}</td>
@@ -5894,6 +5916,8 @@ document.getElementById('pdfOptionsGenerateBtn').addEventListener('click', ()=>{
     period: document.getElementById('pdfPeriodSelect').value,
     includeComments: document.getElementById('pdfIncludeCommentsToggle').checked,
     includeImages: document.getElementById('pdfIncludeImagesToggle').checked,
+    includeEquity: document.getElementById('pdfIncludeEquityToggle').checked,
+    includeDrawdown: document.getElementById('pdfIncludeDrawdownToggle').checked,
   };
   document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
   showToast(t('pdfReport.generating'));
