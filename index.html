@@ -1670,7 +1670,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-10-pair-picker-redesign-v39
+        Build: 2026-09-12-pdf-customization-v40
       </div>
     </div>
   </section>
@@ -1902,6 +1902,40 @@
      text renders with correct shaping/RTL exactly as it does everywhere
      else in the app — jsPDF's native text drawing has no Arabic font
      support, so this sidesteps that entirely. -->
+<!-- PDF report customization modal — opened before actually generating the
+     report, so the person picks which period to include and whether to
+     bring along per-trade comments/images, rather than always getting a
+     fixed "last 60 trades, summary only" report. -->
+<div class="modal-overlay" id="pdfOptionsModalOverlay">
+  <div class="modal" style="max-width:460px;">
+    <h2 data-i18n="pdfOptions.title">تخصيص تقرير PDF</h2>
+    <div class="modal-sub" data-i18n="pdfOptions.subtitle">اختر الفترة والتفاصيل التي تريد تضمينها قبل إنشاء التقرير</div>
+    <div class="field-group">
+      <label data-i18n="pdfOptions.period">الفترة الزمنية</label>
+      <select id="pdfPeriodSelect"></select>
+    </div>
+    <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
+      <span style="font-size:13px;" data-i18n="pdfOptions.includeComments">تضمين تعليقات الصفقات</span>
+      <label class="switch">
+        <input type="checkbox" id="pdfIncludeCommentsToggle" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </div>
+    <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:12px 16px;">
+      <span style="font-size:13px;" data-i18n="pdfOptions.includeImages">تضمين صور الصفقات (قبل/بعد)</span>
+      <label class="switch">
+        <input type="checkbox" id="pdfIncludeImagesToggle">
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </div>
+    <div class="settings-sub" data-i18n="pdfOptions.imagesNote">تضمين الصور يجعل التقرير أكبر حجماً وأطول صفحات، وقد يستغرق إنشاؤه وقتاً أطول قليلاً</div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="pdfOptionsCancelBtn" data-i18n="modal.cancel">إلغاء</button>
+      <button type="button" class="btn-primary" id="pdfOptionsGenerateBtn" data-i18n="pdfOptions.generate">إنشاء التقرير</button>
+    </div>
+  </div>
+</div>
+
 <div id="pdfReportTemplate" style="position:fixed; top:0; left:-9999px; width:800px; background:#ffffff; color:#1a1a2e; font-family:'Segoe UI',Tahoma,Arial,sans-serif; padding:36px; direction:rtl;">
   <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #6C5CE7; padding-bottom:16px; margin-bottom:24px;">
     <div>
@@ -2479,6 +2513,11 @@ const TRANSLATIONS = {
     'toast.autoSaveResumed': 'تم استئناف الحفظ التلقائي', 'toast.dataExported': 'تم تصدير البيانات',
     'sidebar.exportPdf': 'تقرير PDF للمشاركة',
     'pdfReport.generating': '⏳ جارٍ تجهيز التقرير...', 'pdfReport.done': '✅ تم تنزيل التقرير بنجاح',
+    'pdfOptions.title': 'تخصيص تقرير PDF', 'pdfOptions.subtitle': 'اختر الفترة والتفاصيل التي تريد تضمينها قبل إنشاء التقرير',
+    'pdfOptions.period': 'الفترة الزمنية', 'pdfOptions.allTime': 'كل الفترات',
+    'pdfOptions.includeComments': 'تضمين تعليقات الصفقات', 'pdfOptions.includeImages': 'تضمين صور الصفقات (قبل/بعد)',
+    'pdfOptions.imagesNote': 'تضمين الصور يجعل التقرير أكبر حجماً وأطول صفحات، وقد يستغرق إنشاؤه وقتاً أطول قليلاً',
+    'pdfOptions.generate': 'إنشاء التقرير',
     'pdfReport.failed': '⚠️ تعذّر إنشاء التقرير — حاول مجدداً', 'pdfReport.noTrades': 'أضف صفقة واحدة على الأقل أولاً لإنشاء تقرير',
     'pdfReport.generatedOn': 'تم الإنشاء في {date}', 'pdfReport.tradesTable': 'سجل الصفقات (آخر 60 صفقة)',
     'toast.dataImported': 'تم استيراد {n} صفقة', 'toast.importError': 'تعذّر قراءة الملف — تأكد أنه ملف JSON صحيح',
@@ -2723,6 +2762,11 @@ const TRANSLATIONS = {
     'toast.autoSaveResumed': 'Auto-save resumed', 'toast.dataExported': 'Data exported',
     'sidebar.exportPdf': 'Shareable PDF Report',
     'pdfReport.generating': '⏳ Preparing report...', 'pdfReport.done': '✅ Report downloaded successfully',
+    'pdfOptions.title': 'Customize PDF Report', 'pdfOptions.subtitle': 'Choose the period and details to include before generating the report',
+    'pdfOptions.period': 'Time Period', 'pdfOptions.allTime': 'All Time',
+    'pdfOptions.includeComments': 'Include trade comments', 'pdfOptions.includeImages': 'Include trade images (before/after)',
+    'pdfOptions.imagesNote': 'Including images makes the report larger and longer, and may take a bit more time to generate',
+    'pdfOptions.generate': 'Generate Report',
     'pdfReport.failed': "⚠️ Couldn't generate the report — try again", 'pdfReport.noTrades': 'Add at least one trade first to generate a report',
     'pdfReport.generatedOn': 'Generated on {date}', 'pdfReport.tradesTable': 'Trade Log (last 60 trades)',
     'toast.dataImported': '{n} trades imported', 'toast.importError': "Couldn't read the file — make sure it's a valid JSON file",
@@ -5714,17 +5758,25 @@ function renderPeriodTables(){
 // rather than drawn with jsPDF's native text commands — specifically so
 // Arabic text renders with correct shaping/RTL exactly as elsewhere in the
 // app; jsPDF's built-in fonts have no Arabic glyph support at all.
-async function generatePdfReport(){
-  const stats = computeStats(trades);
+async function generatePdfReport(options){
+  options = options || { period: 'all', includeComments: true, includeImages: false };
+  const filteredTrades = options.period === 'all'
+    ? trades
+    : trades.filter(tr => tr.date.slice(0,7) === options.period);
+
+  const stats = computeStats(filteredTrades);
   const accName = (accounts.find(a=>a.id===activeAccountId) || {}).name || '';
 
   document.getElementById('pdfReportSubtitle').textContent = accName;
+  const periodLabel = options.period === 'all'
+    ? t('pdfOptions.allTime')
+    : document.getElementById('pdfPeriodSelect').selectedOptions[0]?.textContent || options.period;
   document.getElementById('pdfReportMeta').textContent =
-    t('pdfReport.generatedOn', {date: new Date().toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US')});
+    t('pdfReport.generatedOn', {date: new Date().toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US')}) + ' — ' + periodLabel;
 
   const kpis = [
     { label: t('dash.netPL'), value: fmtMoney(stats.netPL), color: stats.netPL>=0 ? '#16a34a' : '#dc2626' },
-    { label: t('dash.winRate'), value: trades.length ? (stats.winRate*100).toFixed(1)+'%' : '—', color: '#6C5CE7' },
+    { label: t('dash.winRate'), value: filteredTrades.length ? (stats.winRate*100).toFixed(1)+'%' : '—', color: '#6C5CE7' },
     { label: t('dash.totalTrades'), value: String(stats.total), color: '#1a1a2e' },
     { label: t('dash.profitFactor'), value: stats.profitFactor===Infinity ? '∞' : stats.profitFactor.toFixed(2), color: '#1a1a2e' },
   ];
@@ -5742,26 +5794,41 @@ async function generatePdfReport(){
   document.getElementById('pdfDrawdownImg').src = charts.drawdown ? charts.drawdown.toBase64Image() : '';
 
   document.getElementById('pdfTradesLabel').textContent = t('pdfReport.tradesTable');
-  const sortedTrades = [...trades].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 60);
+  const sortedTrades = [...filteredTrades].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 200);
+  const commentTh = options.includeComments ? `<th style="padding:6px; border:1px solid #eee;">${t('journal.thComment')}</th>` : '';
+  const imagesTh = options.includeImages ? `<th style="padding:6px; border:1px solid #eee;">${t('journal.thBefore')}/${t('journal.thAfter')}</th>` : '';
   const headerRow = `<tr style="background:#f5f3ff;">
     <th style="padding:6px; border:1px solid #eee;">${t('journal.thDate')}</th>
     <th style="padding:6px; border:1px solid #eee;">${t('journal.thPair')}</th>
     <th style="padding:6px; border:1px solid #eee;">${t('journal.thType')}</th>
     <th style="padding:6px; border:1px solid #eee;">${t('journal.thResult')}</th>
     <th style="padding:6px; border:1px solid #eee;">${t('journal.thPL')}</th>
+    ${commentTh}${imagesTh}
   </tr>`;
-  const rows = sortedTrades.map(tr => `<tr>
-    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.date}</td>
-    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.pair}</td>
-    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.direction}</td>
-    <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.result}</td>
-    <td style="padding:5px; border:1px solid #eee; text-align:center; color:${tr.pl>=0?'#16a34a':'#dc2626'}; font-weight:700;">${fmtMoneyPlain(tr.pl)}</td>
-  </tr>`).join('');
-  document.getElementById('pdfTradesTable').innerHTML = headerRow + rows;
+  const rows = sortedTrades.map(tr => {
+    const commentTd = options.includeComments
+      ? `<td style="padding:5px; border:1px solid #eee; text-align:right; font-size:10px;">${tr.comment || ''}</td>` : '';
+    const imagesTd = options.includeImages
+      ? `<td style="padding:5px; border:1px solid #eee; text-align:center;">
+          ${tr.imageBefore ? `<img src="${tr.imageBefore}" style="max-width:70px; max-height:50px; border-radius:4px; margin:1px;">` : ''}
+          ${tr.imageAfter ? `<img src="${tr.imageAfter}" style="max-width:70px; max-height:50px; border-radius:4px; margin:1px;">` : ''}
+        </td>` : '';
+    return `<tr>
+      <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.date}</td>
+      <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.pair}</td>
+      <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.direction}</td>
+      <td style="padding:5px; border:1px solid #eee; text-align:center;">${tr.result}</td>
+      <td style="padding:5px; border:1px solid #eee; text-align:center; color:${tr.pl>=0?'#16a34a':'#dc2626'}; font-weight:700;">${fmtMoneyPlain(tr.pl)}</td>
+      ${commentTd}${imagesTd}
+    </tr>`;
+  }).join('');
+  document.getElementById('pdfTradesTable').innerHTML = headerRow + (rows || `<tr><td colspan="7" style="padding:16px; text-align:center; color:#888;">${t('journal.noDataYet')}</td></tr>`);
 
-  // Give the chart <img> sources a brief moment to actually paint before
-  // html2canvas snapshots the DOM, since setting .src is asynchronous.
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // Give the chart/trade <img> sources a brief moment to actually paint
+  // before html2canvas snapshots the DOM, since setting .src is async —
+  // images take longer than the charts alone, so wait a bit longer when
+  // per-trade images are included.
+  await new Promise(resolve => setTimeout(resolve, options.includeImages ? 500 : 200));
 
   const el = document.getElementById('pdfReportTemplate');
   const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
@@ -5786,13 +5853,51 @@ async function generatePdfReport(){
   }
 
   const accSlug = (accName || 'account').replace(/[^\p{L}\p{N}]+/gu, '-');
-  pdf.save(`mr-mahmood-report-${accSlug}-${new Date().toISOString().slice(0,10)}.pdf`);
+  const periodSlug = options.period === 'all' ? 'all-time' : options.period;
+  pdf.save(`mr-mahmood-report-${accSlug}-${periodSlug}.pdf`);
+}
+
+function populatePdfPeriodSelect(){
+  const select = document.getElementById('pdfPeriodSelect');
+  select.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = 'all';
+  allOpt.textContent = t('pdfOptions.allTime');
+  select.appendChild(allOpt);
+
+  // Build a unique, most-recent-first list of "YYYY-MM" months that
+  // actually have trades, so the person only sees periods with real data.
+  const monthKeys = [...new Set(trades.map(tr => tr.date.slice(0,7)))].sort().reverse();
+  const monthNames = currentLang === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN;
+  monthKeys.forEach(key=>{
+    const [y, m] = key.split('-').map(Number);
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = `${monthNames[m-1]} ${y}`;
+    select.appendChild(opt);
+  });
 }
 
 document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
   if(!trades.length){ showToast(t('pdfReport.noTrades')); return; }
+  populatePdfPeriodSelect();
+  document.getElementById('pdfOptionsModalOverlay').classList.add('open');
+});
+document.getElementById('pdfOptionsCancelBtn').addEventListener('click', ()=>{
+  document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
+});
+document.getElementById('pdfOptionsModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'pdfOptionsModalOverlay') document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
+});
+document.getElementById('pdfOptionsGenerateBtn').addEventListener('click', ()=>{
+  const options = {
+    period: document.getElementById('pdfPeriodSelect').value,
+    includeComments: document.getElementById('pdfIncludeCommentsToggle').checked,
+    includeImages: document.getElementById('pdfIncludeImagesToggle').checked,
+  };
+  document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
   showToast(t('pdfReport.generating'));
-  generatePdfReport()
+  generatePdfReport(options)
     .then(()=> showToast(t('pdfReport.done')))
     .catch(e=>{
       console.error('PDF report generation failed:', e);
