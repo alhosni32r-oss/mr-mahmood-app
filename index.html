@@ -1671,7 +1671,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-16-time-12hour-format-v43
+        Build: 2026-09-16-local-time-fix-v44
       </div>
     </div>
   </section>
@@ -2398,7 +2398,7 @@ const TRANSLATIONS = {
     'journal.thDate': 'التاريخ', 'journal.thWeek': 'الأسبوع', 'journal.thMonth': 'الشهر', 'journal.thPair': 'الزوج',
     'journal.thType': 'النوع', 'journal.thLot': 'اللوت', 'journal.thResult': 'النتيجة', 'journal.thPL': 'الربح/الخسارة',
     'journal.thComment': 'التعليق', 'journal.thBefore': 'قبل', 'journal.thAfter': 'بعد', 'journal.thExtra': 'إضافية',
-    'journal.thDuration': 'التوقيت (لندن)', 'journal.durationHM': '{h}س {m}د', 'journal.durationM': '{m} دقيقة',
+    'journal.thDuration': 'التوقيت (محلي)', 'journal.durationHM': '{h}س {m}د', 'journal.durationM': '{m} دقيقة',
     'journal.thCount': 'عدد', 'journal.thWins': 'رابحة', 'journal.thLosses': 'خاسرة',
     'journal.thWinRate': 'نسبة النجاح', 'journal.thNetPL': 'صافي الربح',
     'journal.empty': 'لا توجد صفقات بعد — اضغط "إضافة صفقة جديدة" لبدء سجلك',
@@ -2650,7 +2650,7 @@ const TRANSLATIONS = {
     'journal.thDate': 'Date', 'journal.thWeek': 'Week', 'journal.thMonth': 'Month', 'journal.thPair': 'Pair',
     'journal.thType': 'Side', 'journal.thLot': 'Lot', 'journal.thResult': 'Result', 'journal.thPL': 'P&L',
     'journal.thComment': 'Comment', 'journal.thBefore': 'Before', 'journal.thAfter': 'After', 'journal.thExtra': 'Extra',
-    'journal.thDuration': 'Time (London)', 'journal.durationHM': '{h}h {m}m', 'journal.durationM': '{m} min',
+    'journal.thDuration': 'Time (Local)', 'journal.durationHM': '{h}h {m}m', 'journal.durationM': '{m} min',
     'journal.thCount': 'Count', 'journal.thWins': 'Wins', 'journal.thLosses': 'Losses',
     'journal.thWinRate': 'Win Rate', 'journal.thNetPL': 'Net P&L',
     'journal.empty': 'No trades yet — click "Add New Trade" to start your journal',
@@ -5714,10 +5714,15 @@ function getFilteredTrades(){
 // handling GMT/BST daylight saving automatically — forex session times
 // are conventionally discussed in London time, so this is what lets
 // someone later analyze "what time do my stop-losses usually get hit".
+// Shows the device's own local time — earlier this converted to London
+// time specifically (the conventional forex session reference), but that
+// meant a trade opened at, say, 2:52 PM locally showed as 11:52 AM,
+// which read as a bug rather than a deliberate timezone conversion. Local
+// time matches what the person actually saw on their clock when trading.
 function formatLondonTime(timestamp){
   if(!timestamp) return null;
   return new Intl.DateTimeFormat(currentLang === 'ar' ? 'ar-EG' : 'en-US', {
-    timeZone: 'Europe/London', hour: 'numeric', minute: '2-digit', hour12: true
+    hour: 'numeric', minute: '2-digit', hour12: true
   }).format(new Date(timestamp));
 }
 function formatDurationMinutes(entryTs, exitTs){
