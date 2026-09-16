@@ -1687,7 +1687,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-16-calendar-cell-fix-v48
+        Build: 2026-09-16-calendar-shrink-fit-v49
       </div>
     </div>
   </section>
@@ -3534,6 +3534,19 @@ function fmtMoney(n){
 function fmtMoneyPlain(n){
   const val = convertAmount(Number(n));
   return currencyPrefix() + val.toLocaleString('en-US',{minimumFractionDigits:currencyDecimals(),maximumFractionDigits:currencyDecimals()}) + currencySuffix();
+}
+// Compact form for tight spaces like calendar day cells — a 4-digit amount
+// with a thousands separator ("$1,250.50") was wide enough that even the
+// shrink-to-fit sizing couldn't keep it inside a day cell without becoming
+// illegibly small. Abbreviating ("$1.3K") stays short AND readable, which
+// shrinking font-size alone can't guarantee for arbitrarily large amounts.
+function fmtMoneyCompact(n){
+  const sign = n < 0 ? '-' : '+';
+  const val = Math.abs(convertAmount(n));
+  if(val >= 1000){
+    return sign + currencyPrefix() + (val/1000).toFixed(1) + 'K' + currencySuffix();
+  }
+  return sign + currencyPrefix() + val.toFixed(val >= 100 ? 0 : currencyDecimals()) + currencySuffix();
 }
 function isoWeekLabel(d){
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -5672,7 +5685,7 @@ function renderCalendar(){
       const winRate = hasTrades ? Math.round((dayWins[key] || 0) / dayTotal[key] * 100) : null;
       daysHtml += `<div class="${cls}"${clickAttr}>
         <span class="cal-day-num${isToday ? ' today' : ''}">${d.getDate()}</span>
-        ${hasTrades ? `<span class="cal-day-pl">${fmtMoney(pl)}</span><span class="cal-day-winrate">${winRate}%</span>` : ''}
+        ${hasTrades ? `<span class="cal-day-pl">${fmtMoneyCompact(pl)}</span><span class="cal-day-winrate">${winRate}%</span>` : ''}
       </div>`;
     }
 
@@ -5702,6 +5715,27 @@ function renderCalendar(){
     weekStart.setDate(weekStart.getDate() + 7);
     weekIndex++;
   }
+
+  // Guarantees every day cell's amount is fully visible, never silently
+  // clipped — a fixed font-size overflowed for larger figures (confirmed
+  // in practice: "$1,250.50" was rendering as just "250.50", missing the
+  // "$1," entirely, which is misleading rather than just a cosmetic
+  // inconsistency). The overflow happens against the CELL's available
+  // width (minus its own padding), not the amount element's own width —
+  // that element sizes freely to its content, so checking it against
+  // itself never detects the problem. Shrinks only the specific cells
+  // that actually need it, so everyday amounts keep the normal size.
+  wrap.querySelectorAll('.cal-day-pl').forEach(el=>{
+    const cell = el.closest('.cal-day');
+    const cellStyle = getComputedStyle(cell);
+    const availableWidth = cell.clientWidth - parseFloat(cellStyle.paddingLeft) - parseFloat(cellStyle.paddingRight);
+    let size = 16;
+    el.style.fontSize = size + 'px';
+    while(el.scrollWidth > availableWidth && size > 8){
+      size -= 1;
+      el.style.fontSize = size + 'px';
+    }
+  });
 }
 
 document.getElementById('calPrevBtn').addEventListener('click', ()=>{
