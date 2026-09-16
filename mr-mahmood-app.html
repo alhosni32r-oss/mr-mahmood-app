@@ -1361,6 +1361,7 @@
             <th data-i18n="journal.thDate">التاريخ</th><th data-i18n="journal.thWeek">الأسبوع</th><th data-i18n="journal.thMonth">الشهر</th>
             <th data-i18n="journal.thPair">الزوج</th><th data-i18n="journal.thType">النوع</th><th data-i18n="journal.thLot">اللوت</th>
             <th>SL</th><th>TP</th><th data-i18n="journal.thResult">النتيجة</th><th data-i18n="journal.thPL">الربح/الخسارة</th>
+            <th data-i18n="journal.thDuration">التوقيت (لندن)</th>
             <th data-i18n="journal.thComment">التعليق</th><th data-i18n="journal.thBefore">قبل</th><th data-i18n="journal.thAfter">بعد</th><th data-i18n="journal.thExtra">إضافية</th><th></th>
           </tr>
         </thead>
@@ -1670,7 +1671,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-12-pdf-charts-images-v41
+        Build: 2026-09-16-trade-timing-v42
       </div>
     </div>
   </section>
@@ -1684,6 +1685,8 @@
     <form id="tradeForm">
       <div class="modal-grid">
         <div class="field-group"><label data-i18n="modal.date">التاريخ</label><input type="date" id="fDate" required></div>
+        <div class="field-group"><label data-i18n="modal.entryTime">وقت الدخول (اختياري)</label><input type="time" id="fEntryTime"></div>
+        <div class="field-group"><label data-i18n="modal.exitTime">وقت الخروج (اختياري)</label><input type="time" id="fExitTime"></div>
         <div class="field-group"><label data-i18n="calc.pair">زوج العملة</label><select id="fPair" required></select></div>
         <div class="field-group"><label data-i18n="modal.direction">نوع الصفقة</label>
           <select id="fDirection"><option value="شراء" data-i18n="modal.buy">شراء</option><option value="بيع" data-i18n="modal.sell">بيع</option></select>
@@ -2395,6 +2398,7 @@ const TRANSLATIONS = {
     'journal.thDate': 'التاريخ', 'journal.thWeek': 'الأسبوع', 'journal.thMonth': 'الشهر', 'journal.thPair': 'الزوج',
     'journal.thType': 'النوع', 'journal.thLot': 'اللوت', 'journal.thResult': 'النتيجة', 'journal.thPL': 'الربح/الخسارة',
     'journal.thComment': 'التعليق', 'journal.thBefore': 'قبل', 'journal.thAfter': 'بعد', 'journal.thExtra': 'إضافية',
+    'journal.thDuration': 'التوقيت (لندن)', 'journal.durationHM': '{h}س {m}د', 'journal.durationM': '{m} دقيقة',
     'journal.thCount': 'عدد', 'journal.thWins': 'رابحة', 'journal.thLosses': 'خاسرة',
     'journal.thWinRate': 'نسبة النجاح', 'journal.thNetPL': 'صافي الربح',
     'journal.empty': 'لا توجد صفقات بعد — اضغط "إضافة صفقة جديدة" لبدء سجلك',
@@ -2414,6 +2418,7 @@ const TRANSLATIONS = {
     'imgEditor.loadFailed': '⚠️ تعذّر فتح هذه الصورة — قد تكون كبيرة جداً على هذا الجهاز. جرّب صورة أصغر أو أعد المحاولة.',
 
     'modal.date': 'التاريخ', 'modal.direction': 'نوع الصفقة', 'modal.buy': 'شراء', 'modal.sell': 'بيع',
+    'modal.entryTime': 'وقت الدخول (اختياري)', 'modal.exitTime': 'وقت الخروج (اختياري)',
     'modal.lot': 'حجم اللوت', 'modal.result': 'النتيجة', 'modal.win': 'رابحة', 'modal.loss': 'خاسرة',
     'modal.breakeven': 'متعادلة', 'modal.pl': 'الربح / الخسارة ($)', 'modal.plPlaceholder': 'مثال: 45 أو -20-',
     'modal.comment': 'التعليق / سبب الربح أو الخسارة', 'modal.commentPlaceholder': 'مثال: التزمت بالخطة ودخلت عند تأكيد الاتجاه...',
@@ -2645,6 +2650,7 @@ const TRANSLATIONS = {
     'journal.thDate': 'Date', 'journal.thWeek': 'Week', 'journal.thMonth': 'Month', 'journal.thPair': 'Pair',
     'journal.thType': 'Side', 'journal.thLot': 'Lot', 'journal.thResult': 'Result', 'journal.thPL': 'P&L',
     'journal.thComment': 'Comment', 'journal.thBefore': 'Before', 'journal.thAfter': 'After', 'journal.thExtra': 'Extra',
+    'journal.thDuration': 'Time (London)', 'journal.durationHM': '{h}h {m}m', 'journal.durationM': '{m} min',
     'journal.thCount': 'Count', 'journal.thWins': 'Wins', 'journal.thLosses': 'Losses',
     'journal.thWinRate': 'Win Rate', 'journal.thNetPL': 'Net P&L',
     'journal.empty': 'No trades yet — click "Add New Trade" to start your journal',
@@ -2664,6 +2670,7 @@ const TRANSLATIONS = {
     'imgEditor.loadFailed': "⚠️ Couldn't open this image — it may be too large for this device. Try a smaller image or try again.",
 
     'modal.date': 'Date', 'modal.direction': 'Trade Type', 'modal.buy': 'Buy', 'modal.sell': 'Sell',
+    'modal.entryTime': 'Entry Time (optional)', 'modal.exitTime': 'Exit Time (optional)',
     'modal.lot': 'Lot Size', 'modal.result': 'Result', 'modal.win': 'Win', 'modal.loss': 'Loss',
     'modal.breakeven': 'Breakeven', 'modal.pl': 'Profit / Loss ($)', 'modal.plPlaceholder': 'e.g. 45 or -20',
     'modal.comment': 'Comment / Reason for Win or Loss', 'modal.commentPlaceholder': "e.g. Followed the plan and entered on trend confirmation...",
@@ -3724,6 +3731,8 @@ function editTrade(id){
   document.getElementById('fResult').value = trade.result;
   document.getElementById('fPL').value = trade.pl;
   document.getElementById('fComment').value = trade.comment || '';
+  document.getElementById('fEntryTime').value = trade.entryTimestamp ? new Date(trade.entryTimestamp).toTimeString().slice(0,5) : '';
+  document.getElementById('fExitTime').value = trade.exitTimestamp ? new Date(trade.exitTimestamp).toTimeString().slice(0,5) : '';
 
   if(trade.imageBefore){ showImagePreview('fImageBeforePreview', trade.imageBefore); } else { resetImagePreview('fImageBeforePreview'); }
   if(trade.imageAfter){ showImagePreview('fImageAfterPreview', trade.imageAfter); } else { resetImagePreview('fImageAfterPreview'); }
@@ -4297,6 +4306,7 @@ positionForm.addEventListener('submit', (e)=>{
     imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
     lastUpdated: new Date().toISOString(),
     updatedAt: Date.now(),
+    entryTimestamp: Date.now(),
   };
   addOpenPosition(pos);
   closePositionModal();
@@ -4306,9 +4316,12 @@ tradeForm.addEventListener('submit', (e)=>{
   e.preventDefault();
   const beforePrev = document.getElementById('fImageBeforePreview');
   const afterPrev = document.getElementById('fImageAfterPreview');
+  const dateVal = document.getElementById('fDate').value;
+  const entryTimeVal = document.getElementById('fEntryTime').value;
+  const exitTimeVal = document.getElementById('fExitTime').value;
   const trade = {
     id: editingId || uid(),
-    date: document.getElementById('fDate').value,
+    date: dateVal,
     pair: document.getElementById('fPair').value,
     direction: document.getElementById('fDirection').value,
     lot: parseFloat(document.getElementById('fLot').value) || 0,
@@ -4321,6 +4334,8 @@ tradeForm.addEventListener('submit', (e)=>{
     imageAfter: afterPrev.style.display === 'block' ? afterPrev.src : null,
     images: draftTradeImages.slice(),
     updatedAt: Date.now(),
+    entryTimestamp: entryTimeVal ? new Date(`${dateVal}T${entryTimeVal}:00`).getTime() : null,
+    exitTimestamp: exitTimeVal ? new Date(`${dateVal}T${exitTimeVal}:00`).getTime() : null,
   };
 
   if(editingId){
@@ -4457,6 +4472,8 @@ document.getElementById('positionActionForm').addEventListener('submit', (e)=>{
       imageBefore: pos.imageBefore || null,
       imageAfter: newImage || pos.imageAfter || null,
       updatedAt: Date.now(),
+      entryTimestamp: pos.entryTimestamp || null,
+      exitTimestamp: Date.now(),
     };
     trades.push(trade);
     trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
@@ -5693,6 +5710,32 @@ function getFilteredTrades(){
   return list.sort((a,b)=> new Date(b.date)-new Date(a.date));
 }
 
+// Converts a stored timestamp to London local time (HH:MM), correctly
+// handling GMT/BST daylight saving automatically — forex session times
+// are conventionally discussed in London time, so this is what lets
+// someone later analyze "what time do my stop-losses usually get hit".
+function formatLondonTime(timestamp){
+  if(!timestamp) return null;
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(new Date(timestamp));
+}
+function formatDurationMinutes(entryTs, exitTs){
+  if(!entryTs || !exitTs || exitTs < entryTs) return null;
+  const minutes = Math.round((exitTs - entryTs) / 60000);
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  if(h > 0) return t('journal.durationHM', {h, m});
+  return t('journal.durationM', {m});
+}
+function formatTradeDurationCell(trade){
+  const entryStr = formatLondonTime(trade.entryTimestamp);
+  const exitStr = formatLondonTime(trade.exitTimestamp);
+  if(!entryStr && !exitStr) return '—';
+  const duration = formatDurationMinutes(trade.entryTimestamp, trade.exitTimestamp);
+  const line1 = `${entryStr || '?'} ← ${exitStr || '?'}`;
+  return duration ? `${line1}<br><span style="color:var(--muted-2);">${duration}</span>` : line1;
+}
+
 function renderJournal(){
   const list = getFilteredTrades();
   const body = document.getElementById('journalBody');
@@ -5716,6 +5759,7 @@ function renderJournal(){
       <td class="mono-cell">${trade.tp||'—'}</td>
       <td>${resultBadge(trade.result)}</td>
       <td class="mono-cell" style="color:${trade.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(trade.pl)}</td>
+      <td class="mono-cell" style="font-size:11px;">${formatTradeDurationCell(trade)}</td>
       <td class="comment-cell">${trade.comment ? trade.comment : '—'}</td>
       <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
       <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
