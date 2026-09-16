@@ -842,8 +842,12 @@
     .brand-text .tag{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .account-switcher-wrap{ padding:0; width:140px; flex-shrink:0; }
     .menu-label{ display:none; }
-    .menu{ flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:6px; flex-basis:100%; min-width:0; order:1; }
-    .menu-item{ white-space:nowrap; flex-shrink:0; padding:8px 12px; }
+    .menu{ flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:6px; flex-basis:100%; min-width:0; order:1;
+      scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding:0 2px;
+      mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+    }
+    .menu-item{ white-space:nowrap; flex-shrink:0; padding:8px 12px; scroll-snap-align: start; }
     .menu-item.active::after{ display:none; }
     .menu-item.active{ box-shadow: inset 0 0 0 1px rgba(139,127,255,0.35); }
     .sidebar-footer{
@@ -1671,7 +1675,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-16-local-time-fix-v44
+        Build: 2026-09-16-mobile-nav-scroll-v45
       </div>
     </div>
   </section>
@@ -3542,6 +3546,11 @@ document.querySelectorAll('.menu-item[data-view]').forEach(btn=>{
     if(btn.dataset.view === 'journal'){ renderJournal(); renderOpenPositions(); }
     if(btn.dataset.view === 'notes') renderNotes();
     if(btn.dataset.view === 'correlation'){ populateCorrPairSelects(); }
+    // On the horizontally-scrollable mobile menu, make sure the page the
+    // person just switched to is always fully visible — not left
+    // half-scrolled-off at the edge, which is what made the nav look
+    // broken (a word cut off mid-letter) rather than simply scrollable.
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   });
 });
 
