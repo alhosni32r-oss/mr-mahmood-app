@@ -2,7 +2,7 @@
 // get the latest version when online — the old v1 strategy was cache-first,
 // which meant an installed app could get permanently "stuck" on whatever
 // version was cached the very first time it was installed.
-const CACHE_NAME = 'mr-mahmood-v4';
+const CACHE_NAME = 'mr-mahmood-v5';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -43,7 +43,11 @@ self.addEventListener('fetch', (event) => {
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            // Caching is a nice-to-have for offline support, not critical —
+            // if it fails for any reason (e.g. the connection drops mid-
+            // write), that shouldn't surface as an unhandled error; the
+            // response the person actually asked for is returned either way.
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
           }
           return networkResponse;
         })
@@ -65,7 +69,7 @@ self.addEventListener('fetch', (event) => {
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
           }
           return networkResponse;
         })
