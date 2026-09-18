@@ -129,6 +129,18 @@
      keep working normally — this only stops the outer page itself from
      moving. */
   html, body{ overflow-x:hidden; max-width:100vw; }
+  /* A single, consistent keyboard-focus indicator for every interactive
+     element — several controls below removed the browser's default
+     outline (outline:none) without providing any replacement, which
+     leaves keyboard/switch-device users with no visible indication of
+     where focus is. :focus-visible (not plain :focus) means this only
+     appears for keyboard/programmatic focus, not on every mouse click. */
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
+  textarea:focus-visible, [tabindex]:focus-visible, [contenteditable]:focus-visible{
+    outline: 2px solid var(--purple-soft);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
   body{
     background: var(--bg);
     color: var(--text);
@@ -138,6 +150,7 @@
     -webkit-font-smoothing: antialiased;
   }
   button, input, select, textarea{ font-family: inherit; }
+  button, a, .menu-item, .cal-day, .note-card{ touch-action: manipulation; }
   ::-webkit-scrollbar{ width:8px; height:8px; }
   ::-webkit-scrollbar-thumb{ background:#2A2A36; border-radius:8px; }
 
@@ -743,7 +756,7 @@
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--card-2); border:1px solid var(--border); color:var(--text);
     padding:12px 22px; border-radius:10px; font-size:13px; font-weight:600;
-    opacity:0; pointer-events:none; transition: all .25s ease; z-index:200;
+    opacity:0; pointer-events:none; transition: opacity .25s ease, transform .25s ease; z-index:200;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -1228,9 +1241,9 @@
         <div class="panel-title" style="justify-content:space-between;">
           <span>📅 <span data-i18n="dash.calendar">تقويم الصفقات</span></span>
           <div class="cal-nav">
-            <button class="cal-nav-btn" id="calPrevBtn" title="الشهر السابق">‹</button>
+            <button class="cal-nav-btn" id="calPrevBtn" title="الشهر السابق" aria-label="الشهر السابق">‹</button>
             <span id="calMonthLabel">—</span>
-            <button class="cal-nav-btn" id="calNextBtn" title="الشهر التالي">›</button>
+            <button class="cal-nav-btn" id="calNextBtn" title="الشهر التالي" aria-label="الشهر التالي">›</button>
           </div>
         </div>
         <div id="calMonthStatsBar" class="cal-month-stats"></div>
@@ -1691,7 +1704,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-18-chart-guard-fix-v53
+        Build: 2026-09-18-a11y-design-polish-v54
       </div>
     </div>
   </section>
@@ -4657,8 +4670,8 @@ function renderOpenPositions(){
       <td class="mono-cell">${pos.entryPrice || '—'}</td>
       <td class="mono-cell" style="color:${pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(pl)}</td>
       <td class="comment-cell">${pos.lastUpdated ? positionTimeAgo(pos.lastUpdated) : t('positions.neverUpdated')}</td>
-      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" onclick="viewImageFullscreen('${pos.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" onclick="viewImageFullscreen('${pos.imageAfter}')" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
+      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${pos.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" alt="${t('positions.imgAfterLabel')}" onclick="viewImageFullscreen('${pos.imageAfter}')" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" style="padding:5px 9px; font-size:11px;" onclick="updatePositionPL('${pos.id}')">${t('positions.updatePL')}</button>
@@ -5136,7 +5149,9 @@ function renderSessionsClock(){
   if(!dateInput) return; // settings view not yet in DOM on first paint is fine, guard anyway
 
   document.getElementById('sessPrevBtn').title = t('settings.sessionsPrev');
+  document.getElementById('sessPrevBtn').setAttribute('aria-label', t('settings.sessionsPrev'));
   document.getElementById('sessNextBtn').title = t('settings.sessionsNext');
+  document.getElementById('sessNextBtn').setAttribute('aria-label', t('settings.sessionsNext'));
 
   const y = sessionsViewDate.getFullYear(), m = sessionsViewDate.getMonth(), d = sessionsViewDate.getDate();
   dateInput.value = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -5921,8 +5936,8 @@ function renderJournal(){
       <td class="mono-cell" style="color:${trade.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(trade.pl)}</td>
       <td class="mono-cell" style="font-size:11px;">${formatTradeDurationCell(trade)}</td>
       <td class="comment-cell">${trade.comment ? trade.comment : '—'}</td>
-      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
+      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" alt="${t('modal.imgAfter')}" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
       <td>${(trade.images && trade.images.length) ? `<span class="extra-images-badge" onclick="viewImageFullscreen('${trade.images[0]}')" title="${t('modal.imgExtra')}">🖼️ +${trade.images.length}</span>` : '—'}</td>
       <td>
         <div class="row-actions">
@@ -6210,6 +6225,12 @@ function applyTheme(name, skipSave){
   currentTheme = name;
   if(name !== 'light') lastDarkTheme = name;
   document.documentElement.setAttribute('data-theme', name);
+  // Tells the browser whether this is a light or dark theme so native
+  // controls (scrollbars, date/time pickers, form elements) render in a
+  // matching style instead of defaulting to light chrome on a dark page.
+  document.documentElement.style.colorScheme = name === 'light' ? 'light' : 'dark';
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if(themeColorMeta) themeColorMeta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0B0B0F');
   if(!skipSave) saveThemeToStorage(name);
 
   document.querySelectorAll('.theme-card').forEach(c=>{
