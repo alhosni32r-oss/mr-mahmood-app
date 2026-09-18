@@ -1687,7 +1687,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-16-calendar-shrink-fit-v49
+        Build: 2026-09-18-dynamic-budget-completed-v51
       </div>
     </div>
   </section>
@@ -3987,20 +3987,97 @@ function compressCanvasToSafeSize(canvas, maxBytes){
     quality -= 0.05;
     dataUrl = canvas.toDataURL('image/jpeg', quality);
   }
+  // Quality reduction alone has a floor: genuinely noisy/incompressible
+  // content (confirmed in testing) can still exceed the target even at
+  // the lowest quality setting. Shrinking the actual pixel dimensions has
+  // a much lower absolute size ceiling regardless of content complexity,
+  // so this guarantees the target is actually met rather than "as close
+  // as quality alone could get".
+  let workingCanvas = canvas;
+  let scale = 1;
+  while(dataUrl.length > maxBytes && scale > 0.25){
+    scale -= 0.15;
+    const scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = Math.max(1, Math.round(canvas.width * scale));
+    scaledCanvas.height = Math.max(1, Math.round(canvas.height * scale));
+    const sctx = scaledCanvas.getContext('2d');
+    sctx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+    workingCanvas = scaledCanvas;
+    dataUrl = workingCanvas.toDataURL('image/jpeg', 0.7);
+  }
   return dataUrl;
+}
+
+// Tracks which flow is currently using the shared image editor (trade
+// before/after/extra vs. notes vs. positions), so the save/skip buttons
+// below can size the image correctly for that context. Needed specifically
+// because a trade can carry MULTIPLE images (before + after + any number
+// of "extra" ones) that all count toward the SAME 1 MiB Firestore document
+// limit — sizing each one independently at a fixed budget is exactly what
+// let 3 images (3 × ~380KB ≈ 1.14MB) push a single trade over that limit
+// even though each individual image looked safely small on its own.
+let ieContext = null;
+
+// Returns how many images this trade already has (before/after/extra),
+// used to shrink the per-image budget as more images are added, so the
+// TOTAL stays safely under Firestore's 1 MiB limit regardless of count.
+function currentTradeImageCount(){
+  let count = 0;
+  if(document.getElementById('fImageBeforePreview').style.display === 'block') count++;
+  if(document.getElementById('fImageAfterPreview').style.display === 'block') count++;
+  count += draftTradeImages.length;
+  return count;
+}
+// A fixed, conservative per-image budget rather than one calculated from
+// however many images exist "so far" — the earlier version gave the
+// FIRST image a generous budget (since it didn't yet know 2 more were
+// coming), which meant the cumulative total still exceeded Firestore's
+// limit despite each individual image looking reasonably sized. A flat
+// budget applied to every image from the start guarantees the total stays
+// safe up to a realistic number of images (5), regardless of the order
+// they're added in or how many end up on the trade.
+const TOTAL_IMAGE_SAFE_BUDGET = 900000; // leaves ~148KB headroom under Firestore's 1 MiB limit for the record's other fields
+const MIN_IMAGE_BUDGET = 70000;  // floor so quality doesn't collapse to nothing when many images are attached
+const MAX_IMAGE_BUDGET = 380000; // ceiling so a single image doesn't use excessive space unnecessarily
+// Actually computes a per-image budget based on how many images this
+// trade will end up with (before + after + existing extras + the one
+// currently being processed), so the TOTAL stays safely under Firestore's
+// 1 MiB document limit regardless of image count — previously this just
+// returned the same fixed number no matter how many images were already
+// attached, which is how 3 images on one trade could still add up to more
+// than the limit even though each looked individually small.
+function dynamicTradeImageBudget(){
+  const hasBefore = document.getElementById('fImageBeforePreview').style.display === 'block';
+  const hasAfter = document.getElementById('fImageAfterPreview').style.display === 'block';
+  const totalImages = (hasBefore ? 1 : 0) + (hasAfter ? 1 : 0) + draftTradeImages.length + 1;
+  const perImage = Math.floor(TOTAL_IMAGE_SAFE_BUDGET / totalImages);
+  return Math.max(MIN_IMAGE_BUDGET, Math.min(MAX_IMAGE_BUDGET, perImage));
+}
+// Same reasoning as trades — a note's images all live in that SAME note's
+// single Firestore document too, so they share the same 1 MiB ceiling.
+function dynamicNoteImageBudget(){
+  const totalImages = draftNoteImages.length + 1;
+  const perImage = Math.floor(TOTAL_IMAGE_SAFE_BUDGET / totalImages);
+  return Math.max(MIN_IMAGE_BUDGET, Math.min(MAX_IMAGE_BUDGET, perImage));
 }
 
 document.getElementById('ieSkipBtn').addEventListener('click', ()=>{
   // Uses ieCanvas (already holding the loaded — unedited — image) rather
   // than the raw original file, so "use as-is" gets the exact same
   // size-safety guarantee as the "save edited" path below.
-  const finalDataUrl = compressCanvasToSafeSize(ieCanvas);
+  const maxBytes = ieContext === 'trade' ? dynamicTradeImageBudget()
+    : ieContext === 'notes' ? dynamicNoteImageBudget()
+    : undefined;
+  const finalDataUrl = compressCanvasToSafeSize(ieCanvas, maxBytes);
   document.getElementById('imageEditorOverlay').classList.remove('open');
   if(ieOnSave) ieOnSave(finalDataUrl);
 });
 
 document.getElementById('ieSaveBtn').addEventListener('click', ()=>{
-  const finalDataUrl = compressCanvasToSafeSize(ieCanvas);
+  const maxBytes = ieContext === 'trade' ? dynamicTradeImageBudget()
+    : ieContext === 'notes' ? dynamicNoteImageBudget()
+    : undefined;
+  const finalDataUrl = compressCanvasToSafeSize(ieCanvas, maxBytes);
   document.getElementById('imageEditorOverlay').classList.remove('open');
   if(ieOnSave) ieOnSave(finalDataUrl);
 });
@@ -4011,6 +4088,7 @@ function wireImageInput(inputId, previewId){
     if(!file) return;
     const reader = new FileReader();
     reader.onload = ()=>{
+      ieContext = 'trade';
       openImageEditor(reader.result, (finalDataUrl)=>{
         showImagePreview(previewId, finalDataUrl);
       });
@@ -4089,6 +4167,7 @@ document.getElementById('fImagesExtra').addEventListener('change', (e)=>{
     const file = files[idx];
     const reader = new FileReader();
     reader.onload = ()=>{
+      ieContext = 'trade';
       openImageEditor(reader.result, (finalDataUrl)=>{
         draftTradeImages.push(finalDataUrl);
         idx++;
@@ -4145,6 +4224,7 @@ document.getElementById('nImages').addEventListener('change', (e)=>{
     }
     const reader = new FileReader();
     reader.onload = ()=>{
+      ieContext = 'notes';
       openImageEditor(reader.result, (finalDataUrl)=>{
         draftNoteImages.push(finalDataUrl);
         idx++;
