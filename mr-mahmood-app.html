@@ -18,10 +18,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js" defer></script>
+<!-- jsPDF and html2canvas are intentionally NOT loaded here — they're only
+     needed for the rarely-used "Export PDF Report" action, and loading two
+     extra render-blocking scripts on every single page visit for a feature
+     most visits never use was a real, avoidable performance cost. They're
+     fetched on demand the first time the person actually opens the PDF
+     export dialog — see loadPdfLibraries() below. -->
 
 <!-- Cloud Sync (optional): Firebase Auth + Firestore, both via the modular
      SDK below (loaded together so they share the same app instance, which
@@ -1687,7 +1691,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-18-dynamic-budget-completed-v51
+        Build: 2026-09-18-perf-defer-lazy-load-v52
       </div>
     </div>
   </section>
@@ -6084,10 +6088,35 @@ function populatePdfPeriodSelect(){
   });
 }
 
+// jsPDF and html2canvas are loaded on demand, the first time someone
+// actually opens the PDF export dialog — not on every page visit. Cached
+// after the first successful load so re-opening the dialog or generating
+// a second report in the same session doesn't re-fetch them.
+let pdfLibrariesPromise = null;
+function loadPdfLibraries(){
+  if(pdfLibrariesPromise) return pdfLibrariesPromise;
+  const loadScript = (src)=> new Promise((resolve, reject)=>{
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = ()=> reject(new Error('Failed to load ' + src));
+    document.head.appendChild(script);
+  });
+  pdfLibrariesPromise = Promise.all([
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+  ]).catch(e=>{
+    pdfLibrariesPromise = null; // allow retrying on a later click if this attempt failed
+    throw e;
+  });
+  return pdfLibrariesPromise;
+}
+
 document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
   if(!trades.length){ showToast(t('pdfReport.noTrades')); return; }
   populatePdfPeriodSelect();
   document.getElementById('pdfOptionsModalOverlay').classList.add('open');
+  loadPdfLibraries().catch(()=>{}); // start loading now so it's likely ready by the time "Generate" is clicked; a real failure is handled again (with a visible error) at that point
 });
 document.getElementById('pdfOptionsCancelBtn').addEventListener('click', ()=>{
   document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
@@ -6105,7 +6134,8 @@ document.getElementById('pdfOptionsGenerateBtn').addEventListener('click', ()=>{
   };
   document.getElementById('pdfOptionsModalOverlay').classList.remove('open');
   showToast(t('pdfReport.generating'));
-  generatePdfReport(options)
+  loadPdfLibraries()
+    .then(()=> generatePdfReport(options))
     .then(()=> showToast(t('pdfReport.done')))
     .catch(e=>{
       console.error('PDF report generation failed:', e);
@@ -6206,7 +6236,19 @@ const savedTheme = loadThemeFromStorage();
 applyTheme(savedTheme || 'dark', true);
 renderAccountSwitcher();
 renderAccountsSettingsList();
-renderDashboard();
+// Chart.js now loads with `defer` (moved off the render-blocking critical
+// path for a real page-speed improvement) instead of blocking parsing —
+// which means it may not have finished loading yet at this exact point,
+// and renderDashboard() creates Chart instances. Running it once Chart.js
+// has actually loaded (falling back to DOMContentLoaded, which is
+// guaranteed to fire only after every deferred script completes, in the
+// rare case the check below runs before Chart.js's own script tag exists
+// yet) avoids a "Chart is not defined" error on a fast-parsing page load.
+function renderDashboardWhenReady(){
+  if(window.Chart) renderDashboard();
+  else document.addEventListener('DOMContentLoaded', renderDashboard, { once: true });
+}
+renderDashboardWhenReady();
 renderJournal();
 renderOpenPositions();
 renderNotes();
