@@ -1691,7 +1691,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-18-perf-defer-lazy-load-v52
+        Build: 2026-09-18-chart-guard-fix-v53
       </div>
     </div>
   </section>
@@ -4803,6 +4803,17 @@ function hexToRgba(hex, alpha){
 }
 
 function renderCharts(stats){
+  // Charts can be triggered from multiple places (theme switching,
+  // account switching, view switching, not just the one place that was
+  // patched before) — rather than trying to guard every single call site
+  // individually (which is exactly how this slipped through once already:
+  // applyTheme() has its own direct renderDashboard() call that bypassed
+  // the earlier fix), make this function itself safe: if Chart.js hasn't
+  // finished loading yet, just skip silently. The startup sequence's own
+  // renderDashboardWhenReady() retry already guarantees the dashboard gets
+  // rendered correctly once Chart.js is actually ready, so an early call
+  // here doing nothing is harmless, not a lost render.
+  if(typeof Chart === 'undefined') return;
   const cPurpleSoft = cssVar('--purple-soft');
   const cMuted2 = cssVar('--muted-2');
   const cBorder = cssVar('--border');
@@ -4963,6 +4974,11 @@ function selectMarket(idx){
 }
 
 function renderMarketsChart(){
+  // Same reasoning as renderCharts() above — this creates its own Chart
+  // instance independently and can be reached via the same early call
+  // paths, so it needs the identical guard rather than relying on
+  // renderCharts()'s check to somehow cover it too.
+  if(typeof Chart === 'undefined') return;
   marketsBreakdown = computeMarketsBreakdown();
   const wrap = document.getElementById('marketsPanel');
   const legendWrap = document.getElementById('marketsLegend');
