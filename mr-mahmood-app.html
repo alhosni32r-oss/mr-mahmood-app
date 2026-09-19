@@ -648,6 +648,12 @@
 
   /* ---------------- Journal page ---------------- */
   .journal-toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  /* Always visible, so a leftover filter from an earlier session never
+     silently hides trades from someone counting/reviewing the journal —
+     it stays a neutral color when showing everything, and switches to an
+     attention color the moment any filter narrows what's on screen. */
+  .journal-count-indicator{ font-size:12px; font-weight:600; color:var(--muted); margin-inline-start:auto; }
+  .journal-count-indicator.filtered{ color:var(--gold, #e0a94e); background:rgba(224,169,78,0.12); padding:5px 10px; border-radius:8px; }
   .journal-toolbar select, .journal-toolbar input{
     background:var(--card); border:1px solid var(--border); color:var(--text);
     padding:8px 12px; border-radius:9px; font-size:12.5px;
@@ -686,6 +692,18 @@
     border-radius:10px; padding:10px 12px; font-size:13px; min-height:64px; resize:vertical; outline:none;
   }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+  .confirm-modal{ max-width:380px; text-align:center; padding-top:28px; }
+  .confirm-modal-icon{ font-size:34px; margin-bottom:14px; }
+  .confirm-modal-message{ font-size:14.5px; line-height:1.6; color:var(--text); margin-bottom:4px; }
+  .confirm-modal .modal-actions{ justify-content:center; }
+  .btn-danger-solid{
+    background: linear-gradient(135deg, #E5484D, #C13438); color:#fff; border:none;
+    padding:10px 20px; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer;
+    box-shadow: 0 8px 20px -8px rgba(229,72,77,0.55);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-danger-solid:hover{ transform: translateY(-1px); }
+  .btn-danger-solid:active{ transform: translateY(0) scale(0.97); }
   .file-drop{
     border:1.5px dashed var(--border); border-radius:10px; padding:14px; text-align:center;
     font-size:12px; color:var(--muted-2); cursor:pointer; position:relative;
@@ -834,11 +852,12 @@
     transition: background .18s ease;
   }
   .switch-thumb{
-    position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+    position:absolute; top:3px; inset-inline-start:3px; width:20px; height:20px; border-radius:50%;
     background:#fff; transition: transform .18s ease; box-shadow:0 1px 3px rgba(0,0,0,0.3);
   }
   .switch input:checked ~ .switch-track{ background:var(--purple); }
-  .switch input:checked ~ .switch-track .switch-thumb{ transform: translateX(-18px); }
+  html:dir(rtl) .switch input:checked ~ .switch-track .switch-thumb{ transform: translateX(-18px); }
+  html:dir(ltr) .switch input:checked ~ .switch-track .switch-thumb{ transform: translateX(18px); }
 
   @media (max-width: 1180px){
     .stats-grid{ grid-template-columns: repeat(2,1fr); }
@@ -996,9 +1015,9 @@
   .stats-grid .stat-card:nth-child(4){ --accent-bar: inset 0 3px 0 0 color-mix(in srgb, var(--pink) 55%, transparent); }
 
   /* Panel titles get a small gradient accent mark for visual rhythm. */
-  .panel-title{ position:relative; padding-right:14px; }
+  .panel-title{ position:relative; padding-inline-start:14px; }
   .panel-title::after{
-    content:""; position:absolute; right:0; top:3px; bottom:3px; width:4px; border-radius:3px;
+    content:""; position:absolute; inset-inline-start:0; top:3px; bottom:3px; width:4px; border-radius:3px;
     background: linear-gradient(180deg, var(--purple-soft), var(--teal));
   }
 
@@ -1385,6 +1404,7 @@
         <option value="loss" data-i18n="journal.resultLoss">خاسرة فقط</option>
         <option value="be" data-i18n="journal.resultBE">متعادلة فقط</option>
       </select>
+      <span id="journalCountIndicator" class="journal-count-indicator"></span>
     </div>
 
     <div class="journal-table-wrap journal-closed-table-wrap">
@@ -1704,7 +1724,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-18-a11y-design-polish-v54
+        Build: 2026-09-18-journal-filter-indicator-v57
       </div>
     </div>
   </section>
@@ -1942,6 +1962,21 @@
      report, so the person picks which period to include and whether to
      bring along per-trade comments/images, rather than always getting a
      fixed "last 60 trades, summary only" report. -->
+<!-- Custom confirmation modal — replaces the browser's plain native
+     confirm() dialog for destructive actions (delete trade/position/
+     account), which looked like an unstyled default browser element next
+     to the rest of the app's deliberately designed interface. -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal confirm-modal">
+    <div class="confirm-modal-icon">⚠️</div>
+    <div class="confirm-modal-message" id="confirmModalMessage"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="confirmModalCancelBtn" data-i18n="modal.cancel">إلغاء</button>
+      <button type="button" class="btn-danger-solid" id="confirmModalConfirmBtn" data-i18n="modal.confirmDelete">حذف</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pdfOptionsModalOverlay">
   <div class="modal" style="max-width:460px;">
     <h2 data-i18n="pdfOptions.title">تخصيص تقرير PDF</h2>
@@ -2428,6 +2463,8 @@ const TRANSLATIONS = {
     'journal.addNew': 'إضافة صفقة جديدة', 'journal.filterAll': 'كل الصفقات', 'journal.filterWeek': 'هذا الأسبوع',
     'journal.filterMonth': 'هذا الشهر', 'journal.resultAll': 'كل النتائج', 'journal.resultWin': 'رابحة فقط',
     'journal.resultLoss': 'خاسرة فقط', 'journal.resultBE': 'متعادلة فقط',
+    'journal.showingAll': 'تُعرض جميع الصفقات ({total})',
+    'journal.showingFiltered': '⚠️ تُعرض {shown} فقط من أصل {total} صفقة — فلتر نشط',
     'journal.thDate': 'التاريخ', 'journal.thWeek': 'الأسبوع', 'journal.thMonth': 'الشهر', 'journal.thPair': 'الزوج',
     'journal.thType': 'النوع', 'journal.thLot': 'اللوت', 'journal.thResult': 'النتيجة', 'journal.thPL': 'الربح/الخسارة',
     'journal.thComment': 'التعليق', 'journal.thBefore': 'قبل', 'journal.thAfter': 'بعد', 'journal.thExtra': 'إضافية',
@@ -2458,6 +2495,7 @@ const TRANSLATIONS = {
     'modal.imgBefore': '📥 صورة الدخول (قبل)', 'modal.imgAfter': '📤 صورة الخروج (بعد)',
     'modal.imgExtra': '🖼️ صور إضافية (اختياري — بلا حد أقصى)',
     'modal.dropHint': 'اسحب صورة هنا أو اضغط للاختيار', 'modal.cancel': 'إلغاء', 'modal.close': 'إغلاق', 'modal.save': 'حفظ الصفقة',
+    'modal.confirmDelete': 'حذف نهائياً',
 
     'settings.title': 'الإعدادات', 'settings.subtitle': 'خصّص مظهر التطبيق حسب ما يناسبك',
     'settings.installTitle': 'تثبيت التطبيق',
@@ -2680,6 +2718,8 @@ const TRANSLATIONS = {
     'journal.addNew': 'Add New Trade', 'journal.filterAll': 'All Trades', 'journal.filterWeek': 'This Week',
     'journal.filterMonth': 'This Month', 'journal.resultAll': 'All Results', 'journal.resultWin': 'Wins Only',
     'journal.resultLoss': 'Losses Only', 'journal.resultBE': 'Breakeven Only',
+    'journal.showingAll': 'Showing all trades ({total})',
+    'journal.showingFiltered': '⚠️ Showing only {shown} of {total} trades — a filter is active',
     'journal.thDate': 'Date', 'journal.thWeek': 'Week', 'journal.thMonth': 'Month', 'journal.thPair': 'Pair',
     'journal.thType': 'Side', 'journal.thLot': 'Lot', 'journal.thResult': 'Result', 'journal.thPL': 'P&L',
     'journal.thComment': 'Comment', 'journal.thBefore': 'Before', 'journal.thAfter': 'After', 'journal.thExtra': 'Extra',
@@ -2710,6 +2750,7 @@ const TRANSLATIONS = {
     'modal.imgBefore': '📥 Entry Screenshot (Before)', 'modal.imgAfter': '📤 Exit Screenshot (After)',
     'modal.imgExtra': '🖼️ Additional Images (optional — no limit)',
     'modal.dropHint': 'Drag an image here or click to choose', 'modal.cancel': 'Cancel', 'modal.close': 'Close', 'modal.save': 'Save Trade',
+    'modal.confirmDelete': 'Delete Permanently',
 
     'settings.title': 'Settings', 'settings.subtitle': 'Customize the app appearance to your liking',
     'settings.installTitle': 'Install App',
@@ -3111,8 +3152,8 @@ function renderAccountsSettingsList(){
     btn.addEventListener('click', (e)=> switchAccount(e.target.dataset.id));
   });
   wrap.querySelectorAll('.account-delete-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      if(confirm(t('accounts.confirmDelete'))) deleteAccount(e.target.dataset.id);
+    btn.addEventListener('click', async (e)=>{
+      if(await showConfirmModal(t('accounts.confirmDelete'))) deleteAccount(e.target.dataset.id);
     });
   });
 }
@@ -4485,8 +4526,8 @@ tradeForm.addEventListener('submit', (e)=>{
   renderJournal();
 });
 
-function deleteTrade(id){
-  if(!confirm(t('journal.confirmDelete'))) return;
+async function deleteTrade(id){
+  if(!(await showConfirmModal(t('journal.confirmDelete')))) return;
   trades = trades.filter(t=>t.id !== id);
   saveTradesToStorage();
   syncActiveAccountTrades();
@@ -4623,8 +4664,8 @@ document.getElementById('positionActionForm').addEventListener('submit', (e)=>{
   closePositionActionModal();
 });
 
-function deletePosition(id){
-  if(!confirm(t('positions.confirmDelete'))) return;
+async function deletePosition(id){
+  if(!(await showConfirmModal(t('positions.confirmDelete')))) return;
   openPositions = openPositions.filter(p=>p.id !== id);
   syncActiveAccountPositions();
   deleteFromCloud('positions', id);
@@ -4726,6 +4767,33 @@ function viewImageFullscreen(dataUrl){
     console.warn('viewImageFullscreen: Blob conversion failed, falling back to direct open:', e);
     window.open(dataUrl, '_blank');
   }
+}
+
+// Promise-based replacement for the browser's native confirm() — resolves
+// true/false once the person picks an option, so callers just `await` it
+// exactly like a normal confirm(), but the dialog itself matches the
+// app's own design instead of looking like an unstyled browser default.
+function showConfirmModal(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('confirmModalOverlay');
+    document.getElementById('confirmModalMessage').textContent = message;
+    overlay.classList.add('open');
+    const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+    const cancelBtn = document.getElementById('confirmModalCancelBtn');
+    function cleanup(result){
+      overlay.classList.remove('open');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onConfirm(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onOverlay(e){ if(e.target === overlay) cleanup(false); }
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
 }
 
 function showToast(msg){
@@ -5917,6 +5985,13 @@ function renderJournal(){
   const empty = document.getElementById('journalEmpty');
   body.innerHTML = '';
   empty.style.display = list.length ? 'none' : 'block';
+
+  const countIndicator = document.getElementById('journalCountIndicator');
+  const isFiltered = list.length !== trades.length;
+  countIndicator.textContent = isFiltered
+    ? t('journal.showingFiltered', {shown: list.length, total: trades.length})
+    : t('journal.showingAll', {total: trades.length});
+  countIndicator.classList.toggle('filtered', isFiltered);
 
   list.forEach(trade=>{
     const d = new Date(trade.date);
