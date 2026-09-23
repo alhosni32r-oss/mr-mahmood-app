@@ -778,7 +778,17 @@
   }
   .image-gallery-overlay.open{ display:flex; }
   .image-gallery-stage{ max-width:92vw; max-height:88vh; display:flex; align-items:center; justify-content:center; }
-  .image-gallery-stage img{ max-width:92vw; max-height:88vh; object-fit:contain; border-radius:6px; user-select:none; -webkit-user-drag:none; }
+  .image-gallery-stage img{
+    max-width:92vw; max-height:88vh; object-fit:contain; border-radius:6px; user-select:none; -webkit-user-drag:none;
+    transition: transform .15s ease; transform-origin: center center; will-change: transform;
+  }
+  .image-gallery-stage img.zoomed{ cursor: grab; transition: none; }
+  .image-gallery-stage img.zoomed.dragging{ cursor: grabbing; }
+  .image-gallery-zoom-hint{
+    position:absolute; bottom:56px; left:50%; transform:translateX(-50%);
+    color:rgba(255,255,255,0.55); font-size:11px; pointer-events:none;
+  }
+  @media (max-width:600px){ .image-gallery-zoom-hint{ display:none; } }
   .image-gallery-close{
     position:absolute; top:18px; inset-inline-end:18px; width:40px; height:40px; border-radius:50%;
     background:rgba(255,255,255,0.1); color:#fff; border:none; font-size:18px; cursor:pointer;
@@ -1756,7 +1766,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-23-image-gallery-swipe-v58
+        Build: 2026-09-23-image-zoom-pan-v59
       </div>
     </div>
   </section>
@@ -2021,6 +2031,7 @@
   </div>
   <button type="button" class="image-gallery-nav image-gallery-next" id="imageGalleryNextBtn" aria-label="Next">›</button>
   <div class="image-gallery-counter" id="imageGalleryCounter"></div>
+  <div class="image-gallery-zoom-hint" data-i18n="gallery.zoomHint">انقر نقراً مزدوجاً أو مرّر بعجلة الفأرة للتكبير</div>
 </div>
 
 <div class="modal-overlay" id="pdfOptionsModalOverlay">
@@ -2540,6 +2551,7 @@ const TRANSLATIONS = {
     'modal.comment': 'التعليق / سبب الربح أو الخسارة', 'modal.commentPlaceholder': 'مثال: التزمت بالخطة ودخلت عند تأكيد الاتجاه...',
     'modal.imgBefore': '📥 صورة الدخول (قبل)', 'modal.imgAfter': '📤 صورة الخروج (بعد)',
     'modal.imgExtra': '🖼️ صور إضافية (اختياري — بلا حد أقصى)',
+    'gallery.zoomHint': 'انقر نقراً مزدوجاً أو مرّر بعجلة الفأرة للتكبير',
     'modal.dropHint': 'اسحب صورة هنا أو اضغط للاختيار', 'modal.cancel': 'إلغاء', 'modal.close': 'إغلاق', 'modal.save': 'حفظ الصفقة',
     'modal.confirmDelete': 'حذف نهائياً',
 
@@ -2795,6 +2807,7 @@ const TRANSLATIONS = {
     'modal.comment': 'Comment / Reason for Win or Loss', 'modal.commentPlaceholder': "e.g. Followed the plan and entered on trend confirmation...",
     'modal.imgBefore': '📥 Entry Screenshot (Before)', 'modal.imgAfter': '📤 Exit Screenshot (After)',
     'modal.imgExtra': '🖼️ Additional Images (optional — no limit)',
+    'gallery.zoomHint': 'Double-click or scroll to zoom',
     'modal.dropHint': 'Drag an image here or click to choose', 'modal.cancel': 'Cancel', 'modal.close': 'Close', 'modal.save': 'Save Trade',
     'modal.confirmDelete': 'Delete Permanently',
 
@@ -4810,6 +4823,7 @@ function viewImageGallery(images, startIndex){
   document.getElementById('imageGalleryOverlay').classList.add('open');
 }
 function renderImageGallery(){
+  resetGalleryZoom();
   document.getElementById('imageGalleryImg').src = galleryImages[galleryIndex];
   document.getElementById('imageGalleryCounter').textContent = `${galleryIndex + 1} / ${galleryImages.length}`;
   const showNav = galleryImages.length > 1;
@@ -4864,15 +4878,119 @@ document.addEventListener('keydown', (e)=>{
   else if(e.key === 'ArrowRight') imageGalleryNext();
   else if(e.key === 'ArrowLeft') imageGalleryPrev();
 });
-// Swipe support: a simple horizontal-drag threshold, independent of
-// language direction — swiping toward where the "next" arrow visually
-// sits advances, and toward "prev" goes back, regardless of RTL/LTR,
-// since finger movement direction is what the person actually feels.
+// Zoom & pan for the currently displayed gallery image — double-click/
+// double-tap toggles zoom, mouse wheel zooms under the cursor, pinch
+// zooms on touch, and dragging pans around once zoomed in. A single-
+// finger swipe still navigates between images, but only while NOT
+// zoomed in, so panning a zoomed photo doesn't accidentally flip images.
+let galleryScale = 1, galleryPanX = 0, galleryPanY = 0;
+const GALLERY_MIN_SCALE = 1, GALLERY_MAX_SCALE = 4, GALLERY_DOUBLE_TAP_SCALE = 2.5;
+
+function applyGalleryTransform(){
+  const img = document.getElementById('imageGalleryImg');
+  img.style.transform = `translate(${galleryPanX}px, ${galleryPanY}px) scale(${galleryScale})`;
+  img.classList.toggle('zoomed', galleryScale > 1.01);
+}
+function resetGalleryZoom(){
+  galleryScale = 1; galleryPanX = 0; galleryPanY = 0;
+  applyGalleryTransform();
+}
+function clampGalleryPan(){
+  const img = document.getElementById('imageGalleryImg');
+  const w = img.offsetWidth, h = img.offsetHeight;
+  const maxPanX = Math.max(0, (w * galleryScale - w) / 2);
+  const maxPanY = Math.max(0, (h * galleryScale - h) / 2);
+  galleryPanX = Math.max(-maxPanX, Math.min(maxPanX, galleryPanX));
+  galleryPanY = Math.max(-maxPanY, Math.min(maxPanY, galleryPanY));
+}
+function handleGalleryDoubleActivate(clientX, clientY){
+  if(galleryScale > 1.01){
+    resetGalleryZoom();
+    return;
+  }
+  const img = document.getElementById('imageGalleryImg');
+  const rect = img.getBoundingClientRect();
+  const offsetX = clientX - (rect.left + rect.width/2);
+  const offsetY = clientY - (rect.top + rect.height/2);
+  galleryScale = GALLERY_DOUBLE_TAP_SCALE;
+  galleryPanX = -offsetX * (GALLERY_DOUBLE_TAP_SCALE - 1) / GALLERY_DOUBLE_TAP_SCALE;
+  galleryPanY = -offsetY * (GALLERY_DOUBLE_TAP_SCALE - 1) / GALLERY_DOUBLE_TAP_SCALE;
+  clampGalleryPan();
+  applyGalleryTransform();
+}
+document.getElementById('imageGalleryImg').addEventListener('dblclick', (e)=>{
+  handleGalleryDoubleActivate(e.clientX, e.clientY);
+});
+document.querySelector('.image-gallery-stage').addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 0.2 : -0.2;
+  galleryScale = Math.max(GALLERY_MIN_SCALE, Math.min(GALLERY_MAX_SCALE, galleryScale + delta));
+  if(galleryScale <= 1.01){ galleryScale = 1; galleryPanX = 0; galleryPanY = 0; }
+  clampGalleryPan();
+  applyGalleryTransform();
+}, { passive: false });
+
 (function(){
-  let touchStartX = null;
+  let touchStartX = null, touchStartY = null;
+  let isPanning = false, panStartX = 0, panStartY = 0;
+  let pinchStartDist = null, pinchStartScale = 1;
+  let lastTapTime = 0;
   const stage = document.querySelector('.image-gallery-stage');
-  stage.addEventListener('touchstart', (e)=>{ touchStartX = e.touches[0].clientX; }, { passive: true });
+  const img = document.getElementById('imageGalleryImg');
+
+  function touchDist(touches){
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx*dx + dy*dy);
+  }
+
+  stage.addEventListener('touchstart', (e)=>{
+    if(e.touches.length === 2){
+      pinchStartDist = touchDist(e.touches);
+      pinchStartScale = galleryScale;
+      isPanning = false;
+    } else if(e.touches.length === 1){
+      const now = Date.now();
+      if(now - lastTapTime < 300){
+        handleGalleryDoubleActivate(e.touches[0].clientX, e.touches[0].clientY);
+        lastTapTime = 0; touchStartX = null;
+        return;
+      }
+      lastTapTime = now;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      if(galleryScale > 1.01){
+        isPanning = true;
+        panStartX = e.touches[0].clientX - galleryPanX;
+        panStartY = e.touches[0].clientY - galleryPanY;
+        img.classList.add('dragging');
+      }
+    }
+  }, { passive: true });
+
+  stage.addEventListener('touchmove', (e)=>{
+    if(e.touches.length === 2 && pinchStartDist){
+      const scale = pinchStartScale * (touchDist(e.touches) / pinchStartDist);
+      galleryScale = Math.max(GALLERY_MIN_SCALE, Math.min(GALLERY_MAX_SCALE, scale));
+      clampGalleryPan();
+      applyGalleryTransform();
+    } else if(isPanning && e.touches.length === 1){
+      galleryPanX = e.touches[0].clientX - panStartX;
+      galleryPanY = e.touches[0].clientY - panStartY;
+      clampGalleryPan();
+      applyGalleryTransform();
+    }
+  }, { passive: true });
+
   stage.addEventListener('touchend', (e)=>{
+    img.classList.remove('dragging');
+    if(pinchStartDist){
+      pinchStartDist = null;
+      if(galleryScale <= 1.01) resetGalleryZoom();
+      return;
+    }
+    if(isPanning){ isPanning = false; return; }
+    // Not zoomed, not panning: a plain swipe navigates, exactly as before.
     if(touchStartX === null) return;
     const deltaX = e.changedTouches[0].clientX - touchStartX;
     if(Math.abs(deltaX) > 50){
