@@ -770,6 +770,38 @@
   #imgEditorCanvas{ touch-action:none; cursor:crosshair; max-width:100%; border-radius:6px; display:block; }
 
 
+  /* ---------------- Image gallery / lightbox ---------------- */
+  .image-gallery-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:400;
+    display:none; align-items:center; justify-content:center;
+    touch-action: pan-y;
+  }
+  .image-gallery-overlay.open{ display:flex; }
+  .image-gallery-stage{ max-width:92vw; max-height:88vh; display:flex; align-items:center; justify-content:center; }
+  .image-gallery-stage img{ max-width:92vw; max-height:88vh; object-fit:contain; border-radius:6px; user-select:none; -webkit-user-drag:none; }
+  .image-gallery-close{
+    position:absolute; top:18px; inset-inline-end:18px; width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,0.1); color:#fff; border:none; font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; z-index:2; touch-action: manipulation;
+  }
+  .image-gallery-close:hover{ background:rgba(255,255,255,0.2); }
+  .image-gallery-nav{
+    position:absolute; top:50%; transform:translateY(-50%); width:48px; height:48px; border-radius:50%;
+    background:rgba(255,255,255,0.1); color:#fff; border:none; font-size:28px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; z-index:2; touch-action: manipulation;
+  }
+  .image-gallery-nav:hover{ background:rgba(255,255,255,0.2); }
+  .image-gallery-prev{ inset-inline-start:18px; }
+  .image-gallery-next{ inset-inline-end:18px; }
+  .image-gallery-counter{
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    background:rgba(255,255,255,0.12); color:#fff; font-size:12px; font-weight:600;
+    padding:5px 14px; border-radius:999px; font-family:var(--mono);
+  }
+  @media (max-width:600px){
+    .image-gallery-nav{ width:40px; height:40px; font-size:22px; }
+  }
+
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--card-2); border:1px solid var(--border); color:var(--text);
@@ -1724,7 +1756,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-18-journal-filter-indicator-v57
+        Build: 2026-09-23-image-gallery-swipe-v58
       </div>
     </div>
   </section>
@@ -1975,6 +2007,20 @@
       <button type="button" class="btn-danger-solid" id="confirmModalConfirmBtn" data-i18n="modal.confirmDelete">حذف</button>
     </div>
   </div>
+</div>
+
+<!-- In-app image gallery/lightbox — replaces opening images in a new browser
+     tab, so a trade's before/after/extra photos (or a note's photos) can be
+     browsed with left/right navigation instead of closing and reopening
+     each thumbnail individually. -->
+<div class="image-gallery-overlay" id="imageGalleryOverlay">
+  <button type="button" class="image-gallery-close" id="imageGalleryCloseBtn" aria-label="Close">✕</button>
+  <button type="button" class="image-gallery-nav image-gallery-prev" id="imageGalleryPrevBtn" aria-label="Previous">‹</button>
+  <div class="image-gallery-stage">
+    <img id="imageGalleryImg" alt="">
+  </div>
+  <button type="button" class="image-gallery-nav image-gallery-next" id="imageGalleryNextBtn" aria-label="Next">›</button>
+  <div class="image-gallery-counter" id="imageGalleryCounter"></div>
 </div>
 
 <div class="modal-overlay" id="pdfOptionsModalOverlay">
@@ -3376,7 +3422,7 @@ function renderNotes(){
     card.style.color = color.text;
     const dateStr = new Date(n.createdAt).toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', {year:'numeric', month:'short', day:'numeric'});
     const imagesHtml = (n.images && n.images.length) ? `<div class="note-card-images">${
-      n.images.map(img=>`<img src="${img}" onclick="event.stopPropagation(); viewImageFullscreen('${img}')">`).join('')
+      n.images.map((img,idx)=>`<img src="${img}" onclick="event.stopPropagation(); viewNoteImageGallery('${n.id}', ${idx})">`).join('')
     }</div>` : '';
     const filesHtml = (n.files && n.files.length) ? `<div class="note-card-files">${
       n.files.map((f,idx)=>`<a class="note-card-file-link" href="javascript:void(0)" onclick="event.stopPropagation(); downloadNoteFileByIndex('${n.id}', ${idx})">
@@ -3418,8 +3464,8 @@ function viewNote(id){
   document.getElementById('noteViewText').innerHTML = n.text || '';
 
   const imagesWrap = document.getElementById('noteViewImages');
-  imagesWrap.innerHTML = (n.images || []).map(img =>
-    `<img src="${img}" onclick="viewImageFullscreen('${img}')">`
+  imagesWrap.innerHTML = (n.images || []).map((img,idx) =>
+    `<img src="${img}" onclick="viewNoteImageGallery('${n.id}', ${idx})">`
   ).join('');
 
   const filesWrap = document.getElementById('noteViewFiles');
@@ -4186,7 +4232,7 @@ function renderNoteImagesGallery(){
     const item = document.createElement('div');
     item.className = 'attach-gallery-item';
     item.innerHTML = `<img src="${img}"><span class="attach-remove-btn">×</span>`;
-    item.querySelector('img').addEventListener('click', ()=> viewImageFullscreen(img));
+    item.querySelector('img').addEventListener('click', ()=> viewDraftNoteImageGallery(idx));
     item.querySelector('.attach-remove-btn').addEventListener('click', ()=>{
       draftNoteImages.splice(idx, 1);
       renderNoteImagesGallery();
@@ -4206,7 +4252,7 @@ function renderTradeImagesGallery(){
     const item = document.createElement('div');
     item.className = 'attach-gallery-item';
     item.innerHTML = `<img src="${img}"><span class="attach-remove-btn">×</span>`;
-    item.querySelector('img').addEventListener('click', ()=> viewImageFullscreen(img));
+    item.querySelector('img').addEventListener('click', ()=> viewDraftTradeImageGallery(idx));
     item.querySelector('.attach-remove-btn').addEventListener('click', ()=>{
       draftTradeImages.splice(idx, 1);
       renderTradeImagesGallery();
@@ -4711,8 +4757,8 @@ function renderOpenPositions(){
       <td class="mono-cell">${pos.entryPrice || '—'}</td>
       <td class="mono-cell" style="color:${pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(pl)}</td>
       <td class="comment-cell">${pos.lastUpdated ? positionTimeAgo(pos.lastUpdated) : t('positions.neverUpdated')}</td>
-      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${pos.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" alt="${t('positions.imgAfterLabel')}" onclick="viewImageFullscreen('${pos.imageAfter}')" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
+      <td>${pos.imageBefore ? `<img src="${pos.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewPositionImageGallery('${pos.id}', 0)" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${pos.imageAfter ? `<img src="${pos.imageAfter}" class="thumb" alt="${t('positions.imgAfterLabel')}" onclick="viewPositionImageGallery('${pos.id}', 1)" title="${t('positions.imgAfterLabel')}">` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" style="padding:5px 9px; font-size:11px;" onclick="updatePositionPL('${pos.id}')">${t('positions.updatePL')}</button>
@@ -4749,25 +4795,92 @@ function renderOpenPositionsBanner(){
 // fail (blank/black tab) when navigating directly to a very long data:
 // URL — converting it to a short-lived Blob Object URL first is the
 // well-established, more compatible way to open large embedded images.
-function viewImageFullscreen(dataUrl){
-  try{
-    const commaIdx = dataUrl.indexOf(',');
-    const header = dataUrl.slice(0, commaIdx);
-    const base64 = dataUrl.slice(commaIdx + 1);
-    const mimeMatch = header.match(/data:(.*?);base64/);
-    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for(let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], {type: mime});
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-    setTimeout(()=> URL.revokeObjectURL(blobUrl), 60000);
-  }catch(e){
-    console.warn('viewImageFullscreen: Blob conversion failed, falling back to direct open:', e);
-    window.open(dataUrl, '_blank');
-  }
+// In-app image gallery — replaces opening a new browser tab so related
+// photos (a trade's before/after/extras, or a note's photos) can be
+// browsed with left/right navigation instead of closing and reopening
+// each thumbnail one at a time.
+let galleryImages = [];
+let galleryIndex = 0;
+
+function viewImageGallery(images, startIndex){
+  galleryImages = (images || []).filter(Boolean);
+  if(!galleryImages.length) return;
+  galleryIndex = Math.max(0, Math.min(startIndex || 0, galleryImages.length - 1));
+  renderImageGallery();
+  document.getElementById('imageGalleryOverlay').classList.add('open');
 }
+function renderImageGallery(){
+  document.getElementById('imageGalleryImg').src = galleryImages[galleryIndex];
+  document.getElementById('imageGalleryCounter').textContent = `${galleryIndex + 1} / ${galleryImages.length}`;
+  const showNav = galleryImages.length > 1;
+  document.getElementById('imageGalleryPrevBtn').style.display = showNav ? 'flex' : 'none';
+  document.getElementById('imageGalleryNextBtn').style.display = showNav ? 'flex' : 'none';
+  document.getElementById('imageGalleryCounter').style.display = showNav ? 'block' : 'none';
+}
+function imageGalleryNext(){
+  if(galleryImages.length < 2) return;
+  galleryIndex = (galleryIndex + 1) % galleryImages.length;
+  renderImageGallery();
+}
+function imageGalleryPrev(){
+  if(galleryImages.length < 2) return;
+  galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+  renderImageGallery();
+}
+function closeImageGallery(){
+  document.getElementById('imageGalleryOverlay').classList.remove('open');
+}
+
+// Wrapper functions: each looks up the CURRENT full image set for the
+// trade/position/note by id (rather than embedding whole base64 arrays
+// into onclick HTML attributes), so the gallery always reflects live data.
+function viewTradeImageGallery(tradeId, startIndex){
+  const trade = trades.find(x => x.id === tradeId);
+  if(!trade) return;
+  viewImageGallery([trade.imageBefore, trade.imageAfter, ...(trade.images || [])], startIndex);
+}
+function viewPositionImageGallery(posId, startIndex){
+  const pos = openPositions.find(x => x.id === posId);
+  if(!pos) return;
+  viewImageGallery([pos.imageBefore, pos.imageAfter], startIndex);
+}
+function viewNoteImageGallery(noteId, startIndex){
+  const note = notes.find(x => x.id === noteId);
+  if(!note) return;
+  viewImageGallery(note.images || [], startIndex);
+}
+function viewDraftNoteImageGallery(startIndex){ viewImageGallery(draftNoteImages, startIndex); }
+function viewDraftTradeImageGallery(startIndex){ viewImageGallery(draftTradeImages, startIndex); }
+
+document.getElementById('imageGalleryCloseBtn').addEventListener('click', closeImageGallery);
+document.getElementById('imageGalleryPrevBtn').addEventListener('click', imageGalleryPrev);
+document.getElementById('imageGalleryNextBtn').addEventListener('click', imageGalleryNext);
+document.getElementById('imageGalleryOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'imageGalleryOverlay') closeImageGallery();
+});
+document.addEventListener('keydown', (e)=>{
+  if(!document.getElementById('imageGalleryOverlay').classList.contains('open')) return;
+  if(e.key === 'Escape') closeImageGallery();
+  else if(e.key === 'ArrowRight') imageGalleryNext();
+  else if(e.key === 'ArrowLeft') imageGalleryPrev();
+});
+// Swipe support: a simple horizontal-drag threshold, independent of
+// language direction — swiping toward where the "next" arrow visually
+// sits advances, and toward "prev" goes back, regardless of RTL/LTR,
+// since finger movement direction is what the person actually feels.
+(function(){
+  let touchStartX = null;
+  const stage = document.querySelector('.image-gallery-stage');
+  stage.addEventListener('touchstart', (e)=>{ touchStartX = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend', (e)=>{
+    if(touchStartX === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(deltaX) > 50){
+      if(deltaX < 0) imageGalleryNext(); else imageGalleryPrev();
+    }
+    touchStartX = null;
+  }, { passive: true });
+})();
 
 // Promise-based replacement for the browser's native confirm() — resolves
 // true/false once the person picks an option, so callers just `await` it
@@ -5741,9 +5854,9 @@ function showDayTradesModal(dateKey){
     item.className = 'day-trade-item';
     const imagesHtml = (tr.imageBefore || tr.imageAfter || (tr.images && tr.images.length)) ? `
       <div class="day-trade-item-images">
-        ${tr.imageBefore ? `<img src="${tr.imageBefore}" title="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${tr.imageBefore}')">` : ''}
-        ${tr.imageAfter ? `<img src="${tr.imageAfter}" title="${t('modal.imgAfter')}" onclick="viewImageFullscreen('${tr.imageAfter}')">` : ''}
-        ${(tr.images || []).map(img => `<img src="${img}" title="${t('modal.imgExtra')}" onclick="viewImageFullscreen('${img}')">`).join('')}
+        ${tr.imageBefore ? `<img src="${tr.imageBefore}" title="${t('modal.imgBefore')}" onclick="viewTradeImageGallery('${tr.id}', 0)">` : ''}
+        ${tr.imageAfter ? `<img src="${tr.imageAfter}" title="${t('modal.imgAfter')}" onclick="viewTradeImageGallery('${tr.id}', ${tr.imageBefore ? 1 : 0})">` : ''}
+        ${(tr.images || []).map((img,i) => `<img src="${img}" title="${t('modal.imgExtra')}" onclick="viewTradeImageGallery('${tr.id}', ${(tr.imageBefore?1:0)+(tr.imageAfter?1:0)+i})">`).join('')}
       </div>` : '';
     item.innerHTML = `
       <div class="day-trade-item-head">
@@ -6011,9 +6124,9 @@ function renderJournal(){
       <td class="mono-cell" style="color:${trade.pl>=0?'var(--green)':'var(--red)'}">${fmtMoney(trade.pl)}</td>
       <td class="mono-cell" style="font-size:11px;">${formatTradeDurationCell(trade)}</td>
       <td class="comment-cell">${trade.comment ? trade.comment : '—'}</td>
-      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewImageFullscreen('${trade.imageBefore}')" title="${t('modal.imgBefore')}">` : '—'}</td>
-      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" alt="${t('modal.imgAfter')}" onclick="viewImageFullscreen('${trade.imageAfter}')" title="${t('modal.imgAfter')}">` : '—'}</td>
-      <td>${(trade.images && trade.images.length) ? `<span class="extra-images-badge" onclick="viewImageFullscreen('${trade.images[0]}')" title="${t('modal.imgExtra')}">🖼️ +${trade.images.length}</span>` : '—'}</td>
+      <td>${trade.imageBefore ? `<img src="${trade.imageBefore}" class="thumb" alt="${t('modal.imgBefore')}" onclick="viewTradeImageGallery('${trade.id}', 0)" title="${t('modal.imgBefore')}">` : '—'}</td>
+      <td>${trade.imageAfter ? `<img src="${trade.imageAfter}" class="thumb" alt="${t('modal.imgAfter')}" onclick="viewTradeImageGallery('${trade.id}', ${trade.imageBefore ? 1 : 0})" title="${t('modal.imgAfter')}">` : '—'}</td>
+      <td>${(trade.images && trade.images.length) ? `<span class="extra-images-badge" onclick="viewTradeImageGallery('${trade.id}', ${(trade.imageBefore?1:0)+(trade.imageAfter?1:0)})" title="${t('modal.imgExtra')}">🖼️ +${trade.images.length}</span>` : '—'}</td>
       <td>
         <div class="row-actions">
           <button class="btn-edit" onclick="editTrade('${trade.id}')">${t('journal.edit')}</button>
