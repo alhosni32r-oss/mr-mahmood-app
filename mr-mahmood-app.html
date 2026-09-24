@@ -15,7 +15,6 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
@@ -64,32 +63,35 @@
 </script>
 <style>
   :root{
-    --bg: #0A0A0F;
-    --bg-2: #0D0D13;
-    --card: #16161D;
-    --card-2: #1B1B24;
-    --header-bg: #1E1E27;
-    --border: #24242E;
-    --text: #F2F2F6;
-    --muted: #8A8A96;
-    --muted-2: #5F5F6B;
-    --purple: #6C5CE7;
-    --purple-soft: #8B7FFF;
-    --purple-tint: #1F1B33;
-    --green: #22C55E;
-    --red: #FB7185;
-    --teal: #2DD4BF;
-    --pink: #F472B6;
+    /* Professional dark navy palette — deep, low-saturation blue-grays
+       instead of the previous purple-tinted blacks, aiming for a calmer,
+       more "banking terminal" feel than a bright consumer-app one. */
+    --bg: #0A0E16;
+    --bg-2: #0D121C;
+    --card: #131A28;
+    --card-2: #19212F;
+    --header-bg: #1B2333;
+    --border: #263045;
+    --text: #E7EBF3;
+    --muted: #8894A8;
+    --muted-2: #57647A;
+    --purple: #4C7EF3;
+    --purple-soft: #71A0FA;
+    --purple-tint: #16213A;
+    --green: #2FBE79;
+    --red: #EF5B72;
+    --teal: #3FC4D4;
+    --pink: #A67FC4;
     --mono: 'JetBrains Mono', monospace;
     --arabic: 'IBM Plex Sans Arabic', sans-serif;
-    --radius: 16px;
+    --radius: 12px;
   }
 
   /* ---------------- Theme palettes ---------------- */
   html[data-theme="light"]{
     --bg:#F5F5F8; --bg-2:#FFFFFF; --card:#FFFFFF; --card-2:#F0F0F5; --header-bg:#EDEDF3;
     --border:#E1E1E8; --text:#14141A; --muted:#6B6B78; --muted-2:#9A9AA6;
-    --purple:#6C5CE7; --purple-soft:#5647D9; --purple-tint:#EEEBFC;
+    --purple:#3D6FE0; --purple-soft:#2E5BC7; --purple-tint:#E8EFFC;
     --green:#16A34A; --red:#E11D48; --teal:#0D9488; --pink:#DB2777;
   }
   html[data-theme="midnight"]{
@@ -166,15 +168,15 @@
   .brand{ display:flex; align-items:center; gap:10px; padding: 4px 8px 28px; }
   .brand-mark{
     width:34px; height:34px; border-radius:9px;
-    background: linear-gradient(135deg, var(--purple), #4C3FD6);
+    background: linear-gradient(135deg, var(--purple), color-mix(in srgb, var(--purple) 75%, black));
     display:flex; align-items:center; justify-content:center;
     font-weight:800; font-size:15px;
-    box-shadow: 0 6px 16px -4px rgba(108,92,231,0.55);
+    box-shadow: 0 4px 10px -3px color-mix(in srgb, var(--purple) 45%, transparent);
   }
   .brand-text .name{font-size:14.5px; font-weight:700;}
   .brand-signature{
-    font-family: 'Playfair Display', serif;
-    font-size: 16.5px !important;
+    font-family: var(--mono);
+    font-size: 15px !important;
     font-weight: 800 !important;
     letter-spacing: 0.4px;
     background: linear-gradient(120deg, var(--purple-soft), var(--teal));
@@ -213,7 +215,7 @@
   .account-name-input:focus{ border-bottom-color:var(--purple-soft); }
   .account-row-meta{ display:flex; gap:10px; align-items:center; margin-top:4px; font-size:11px; color:var(--muted); }
   .account-active-badge{
-    background:rgba(108,92,231,0.16); color:var(--purple-soft); padding:2px 8px; border-radius:6px; font-weight:700; font-size:10px;
+    background:color-mix(in srgb, var(--purple) 16%, transparent); color:var(--purple-soft); padding:2px 8px; border-radius:6px; font-weight:700; font-size:10px;
   }
   .account-row-balance{ display:flex; flex-direction:column; gap:4px; width:120px; }
   .account-row-balance label{ font-size:10px; color:var(--muted-2); }
@@ -235,7 +237,7 @@
   .menu-item svg{width:17px; height:17px; flex-shrink:0;}
   .menu-item:hover{background: rgba(255,255,255,0.04); color: var(--text);}
   .menu-item:active{ transform: scale(0.98); }
-  .menu-item.active{ background: rgba(108,92,231,0.16); color: #C9C3FF; }
+  .menu-item.active{ background: color-mix(in srgb, var(--purple) 16%, transparent); color: var(--purple-soft); }
   .menu-item.active::after{
     content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px;
     background: var(--purple-soft); border-radius:3px;
@@ -269,14 +271,14 @@
   .topbar p{ color: var(--muted); font-size: 13.5px; }
   .btn-primary{
     display:flex; align-items:center; gap:8px;
-    background: linear-gradient(135deg, var(--purple), #5647D9);
+    background: linear-gradient(135deg, var(--purple), color-mix(in srgb, var(--purple) 80%, black));
     color:#fff; border:none; padding: 10px 18px; border-radius: 10px;
     font-size: 13.5px; font-weight:600; cursor:pointer;
-    box-shadow: 0 8px 20px -8px rgba(108,92,231,0.65);
+    box-shadow: 0 5px 12px -6px color-mix(in srgb, var(--purple) 45%, transparent);
     transition: transform .12s ease, box-shadow .12s ease;
   }
   .btn-primary:hover{ transform: translateY(-1px); }
-  .btn-primary:active{ transform: translateY(0) scale(0.97); box-shadow: 0 4px 12px -6px rgba(108,92,231,0.65); }
+  .btn-primary:active{ transform: translateY(0) scale(0.97); box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--purple) 45%, transparent); }
   .btn-primary svg{width:15px; height:15px;}
   .btn-ghost{
     background:none; border:1px solid var(--border); color:var(--text);
@@ -328,7 +330,7 @@
   .stat-card{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
   .stat-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
   .stat-label{ font-size:12.5px; color: var(--muted); font-weight:500;}
-  .stat-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background: rgba(108,92,231,0.14); }
+  .stat-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background: color-mix(in srgb, var(--purple) 14%, transparent); }
   .stat-icon svg{ width:16px; height:16px; }
   .stat-value{ font-size: 26px; font-weight:800; letter-spacing:-0.01em; font-family: var(--mono); margin-bottom:12px;}
   .stat-deltas{ display:flex; gap:6px; flex-wrap:wrap; }
@@ -827,7 +829,7 @@
     padding: 16px; cursor:pointer; transition: border-color .15s ease, transform .12s ease;
   }
   .theme-card:hover{ transform: translateY(-2px); }
-  .theme-card.active{ border-color: var(--purple-soft); box-shadow: 0 0 0 3px rgba(108,92,231,0.18); }
+  .theme-card.active{ border-color: var(--purple-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple-soft) 22%, transparent); }
   .theme-swatch{ display:flex; height:44px; border-radius:9px; overflow:hidden; margin-bottom:12px; border:1px solid var(--border); }
   .theme-swatch span{ flex:1; }
   .theme-card-name{ font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
@@ -1064,15 +1066,15 @@
   }
 
   /* Sidebar active item: soft glow behind the accent bar. */
-  .menu-item.active::after{ box-shadow: 0 0 10px 1px var(--purple-soft); }
-  .brand-mark{ box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--purple) 70%, transparent); }
+  .menu-item.active::after{ box-shadow: 0 0 6px 0px color-mix(in srgb, var(--purple-soft) 65%, transparent); }
+  .brand-mark{ box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--purple) 55%, transparent); }
 
   /* Primary buttons: deeper glow, crisper gradient. */
   .btn-primary{
     background: linear-gradient(135deg, var(--purple-soft), var(--purple) 60%, color-mix(in srgb, var(--purple) 70%, black));
-    box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--purple) 65%, transparent), 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--purple) 45%, transparent), 0 1px 2px rgba(0,0,0,0.2);
   }
-  .btn-primary:hover{ box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--purple) 75%, transparent), 0 2px 4px rgba(0,0,0,0.25); }
+  .btn-primary:hover{ box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--purple) 50%, transparent), 0 1px 2px rgba(0,0,0,0.25); }
 
   /* Hero numbers get a subtle glow to feel more like a signature figure. */
   .result-hero{ position:relative; }
@@ -1216,28 +1218,28 @@
     <section class="stats-grid">
       <div class="stat-card">
         <div class="stat-top"><span class="stat-label" data-i18n="dash.winRate">نسبة النجاح</span>
-          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-soft)" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
         </div>
         <div class="stat-value" id="statWinRate">—</div>
         <div class="stat-deltas" id="statWinRateDelta"></div>
       </div>
       <div class="stat-card">
         <div class="stat-top"><span class="stat-label" data-i18n="dash.netPL">صافي الربح/الخسارة</span>
-          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-soft)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
         </div>
         <div class="stat-value" id="statNetPL">—</div>
         <div class="stat-deltas" id="statNetPLDelta"></div>
       </div>
       <div class="stat-card">
         <div class="stat-top"><span class="stat-label" data-i18n="dash.profitFactor">عامل الربح (Profit Factor)</span>
-          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-soft)" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
         </div>
         <div class="stat-value" id="statPF">—</div>
         <div class="stat-deltas" id="statPFDelta"></div>
       </div>
       <div class="stat-card">
         <div class="stat-top"><span class="stat-label" data-i18n="dash.totalTrades">عدد الصفقات</span>
-          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#8B7FFF" stroke-width="2"><rect x="3" y="10" width="4" height="10"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg></div>
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-soft)" stroke-width="2"><rect x="3" y="10" width="4" height="10"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg></div>
         </div>
         <div class="stat-value" id="statTotal">—</div>
         <div class="stat-deltas" id="statTotalDelta"></div>
@@ -1600,13 +1602,13 @@
       <div class="settings-sub" data-i18n="settings.themeSub">اختر النمط اللوني الذي يناسبك — يشمل الوضع الليلي والنهاري وأنماط إضافية</div>
       <div class="theme-grid" id="themeGrid">
         <div class="theme-card" data-theme="dark">
-          <div class="theme-swatch"><span style="background:#0A0A0F"></span><span style="background:#16161D"></span><span style="background:#6C5CE7"></span><span style="background:#2DD4BF"></span></div>
-          <div class="theme-card-name"><span data-i18n="theme.dark">بنفسجي داكن</span>
+          <div class="theme-swatch"><span style="background:#0A0E16"></span><span style="background:#131A28"></span><span style="background:#4C7EF3"></span><span style="background:#3FC4D4"></span></div>
+          <div class="theme-card-name"><span data-i18n="theme.dark">كحلي داكن</span>
             <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
           </div>
         </div>
         <div class="theme-card" data-theme="light">
-          <div class="theme-swatch"><span style="background:#F5F5F8"></span><span style="background:#FFFFFF"></span><span style="background:#6C5CE7"></span><span style="background:#0D9488"></span></div>
+          <div class="theme-swatch"><span style="background:#F5F5F8"></span><span style="background:#FFFFFF"></span><span style="background:#3D6FE0"></span><span style="background:#0D9488"></span></div>
           <div class="theme-card-name"><span data-i18n="theme.light">فاتح نهاري</span>
             <span class="theme-card-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
           </div>
@@ -1766,7 +1768,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-23-image-zoom-pan-v59
+        Build: 2026-09-23-navy-professional-redesign-v60
       </div>
     </div>
   </section>
@@ -2079,7 +2081,7 @@
 </div>
 
 <div id="pdfReportTemplate" style="position:fixed; top:0; left:-9999px; width:800px; background:#ffffff; color:#1a1a2e; font-family:'Segoe UI',Tahoma,Arial,sans-serif; padding:36px; direction:rtl;">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #6C5CE7; padding-bottom:16px; margin-bottom:24px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #3D6FE0; padding-bottom:16px; margin-bottom:24px;">
     <div>
       <div style="font-size:22px; font-weight:800; color:#1a1a2e;">MR.MAHMOOD</div>
       <div style="font-size:12px; color:#888;" id="pdfReportSubtitle"></div>
@@ -2656,7 +2658,7 @@ const TRANSLATIONS = {
     'settings.storageOff': 'الحفظ التلقائي غير متاح في هذه البيئة. بياناتك محفوظة في هذه الجلسة فقط — استخدم "تصدير" قبل إغلاق الصفحة، أو اربط ملف حفظ تلقائي من صفحة الإعدادات (Chrome/Edge).',
 
 
-    'theme.dark': 'بنفسجي داكن', 'theme.light': 'فاتح نهاري', 'theme.midnight': 'أزرق منتصف الليل',
+    'theme.dark': 'كحلي داكن', 'theme.light': 'فاتح نهاري', 'theme.midnight': 'أزرق منتصف الليل',
     'theme.emerald': 'زمردي داكن', 'theme.gold': 'ذهبي وأسود', 'theme.graphite': 'رمادي مريح للعين',
     'theme.toDark': 'التبديل للوضع الليلي', 'theme.toLight': 'التبديل للوضع النهاري',
 
@@ -2912,7 +2914,7 @@ const TRANSLATIONS = {
     'settings.storageOff': 'Auto-save is not available in this environment. Your data is kept for this session only — use "Export" before closing the page, or link an auto-save file from Settings (Chrome/Edge).',
 
 
-    'theme.dark': 'Dark Purple', 'theme.light': 'Light Day', 'theme.midnight': 'Midnight Blue',
+    'theme.dark': 'Dark Navy', 'theme.light': 'Light Day', 'theme.midnight': 'Midnight Blue',
     'theme.emerald': 'Dark Emerald', 'theme.gold': 'Gold & Black', 'theme.graphite': 'Comfortable Grey',
     'theme.toDark': 'Switch to Dark Mode', 'theme.toLight': 'Switch to Light Mode',
 
@@ -5229,7 +5231,7 @@ function renderCharts(stats){
 /* =====================================================================
    MARKETS TRADED — interactive breakdown by currency pair
    ===================================================================== */
-const MARKET_COLORS = ['#8B7FFF','#2DD4BF','#F472B6','#FBBF24','#34D399','#60A5FA','#F87171','#A78BFA','#FB923C','#4ADE80','#38BDF8','#F43F5E'];
+const MARKET_COLORS = ['#4C7EF3','#3FC4D4','#A67FC4','#FBBF24','#2FBE79','#60A5FA','#EF5B72','#8B93F8','#FB923C','#4ADE80','#38BDF8','#F43F5E'];
 let marketsBreakdown = [];
 let marketsSelectedIndex = null;
 
@@ -6321,7 +6323,7 @@ async function generatePdfReport(options){
 
   const kpis = [
     { label: t('dash.netPL'), value: fmtMoney(stats.netPL), color: stats.netPL>=0 ? '#16a34a' : '#dc2626' },
-    { label: t('dash.winRate'), value: filteredTrades.length ? (stats.winRate*100).toFixed(1)+'%' : '—', color: '#6C5CE7' },
+    { label: t('dash.winRate'), value: filteredTrades.length ? (stats.winRate*100).toFixed(1)+'%' : '—', color: '#3D6FE0' },
     { label: t('dash.totalTrades'), value: String(stats.total), color: '#1a1a2e' },
     { label: t('dash.profitFactor'), value: stats.profitFactor===Infinity ? '∞' : stats.profitFactor.toFixed(2), color: '#1a1a2e' },
   ];
