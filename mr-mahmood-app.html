@@ -271,33 +271,34 @@
   .topbar p{ color: var(--muted); font-size: 13.5px; }
   .btn-primary{
     display:flex; align-items:center; gap:8px;
-    background: linear-gradient(135deg, var(--purple), color-mix(in srgb, var(--purple) 80%, black));
-    color:#fff; border:none; padding: 10px 18px; border-radius: 10px;
-    font-size: 13.5px; font-weight:600; cursor:pointer;
-    box-shadow: 0 5px 12px -6px color-mix(in srgb, var(--purple) 45%, transparent);
-    transition: transform .12s ease, box-shadow .12s ease;
+    background: var(--purple);
+    color:#fff; border:1px solid color-mix(in srgb, var(--purple) 60%, black); padding: 10px 18px; border-radius: 9px;
+    font-size: 13.5px; font-weight:600; letter-spacing:0.1px; cursor:pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 1px 2px rgba(0,0,0,0.25);
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
   }
-  .btn-primary:hover{ transform: translateY(-1px); }
-  .btn-primary:active{ transform: translateY(0) scale(0.97); box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--purple) 45%, transparent); }
+  .btn-primary:hover{ background: color-mix(in srgb, var(--purple) 90%, white); transform: translateY(-1px); }
+  .btn-primary:active{ transform: translateY(0) scale(0.97); background: color-mix(in srgb, var(--purple) 88%, black); box-shadow: inset 0 1px 2px rgba(0,0,0,0.25); }
   .btn-primary svg{width:15px; height:15px;}
   .btn-ghost{
-    background:none; border:1px solid var(--border); color:var(--text);
-    padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    background: color-mix(in srgb, var(--card-2) 60%, transparent); border:1px solid var(--border); color:var(--text);
+    padding:10px 16px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;
     transition: border-color .15s ease, transform .12s ease, background .15s ease;
   }
-  .btn-ghost:hover{ border-color:#3A3A48; }
+  .btn-ghost:hover{ border-color: color-mix(in srgb, var(--purple-soft) 45%, var(--border)); background: color-mix(in srgb, var(--purple) 6%, var(--card-2)); }
   .btn-ghost:active{ transform: scale(0.97); background: var(--card-2); }
   .btn-danger{
-    background:rgba(251,113,133,0.14); color:var(--red); border:1px solid rgba(251,113,133,0.3);
-    padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
-    transition: background .15s ease, transform .12s ease;
+    background:color-mix(in srgb, var(--red) 13%, transparent); color:var(--red); border:1px solid color-mix(in srgb, var(--red) 32%, transparent);
+    padding:6px 11px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;
+    transition: background .15s ease, transform .12s ease, border-color .15s ease;
   }
+  .btn-danger:hover{ background:color-mix(in srgb, var(--red) 20%, transparent); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
   .btn-edit{
-    background:rgba(139,127,255,0.14); color:var(--purple-soft); border:1px solid rgba(139,127,255,0.3);
-    padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
-    transition: background .15s ease, transform .12s ease;
+    background:color-mix(in srgb, var(--purple) 13%, transparent); color:var(--purple-soft); border:1px solid color-mix(in srgb, var(--purple) 32%, transparent);
+    padding:6px 11px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;
+    transition: background .15s ease, transform .12s ease, border-color .15s ease;
   }
-  .btn-edit:hover{ background:rgba(139,127,255,0.22); }
+  .btn-edit:hover{ background:color-mix(in srgb, var(--purple) 20%, transparent); border-color: color-mix(in srgb, var(--purple) 45%, transparent); }
   .btn-edit:active{ transform: scale(0.94); }
   .btn-danger:hover{ background:rgba(251,113,133,0.22); }
   .btn-danger:active{ transform: scale(0.94); }
@@ -327,7 +328,10 @@
   .risk-limit-track{ height:12px; border-radius:7px; background:var(--card-2); border:1px solid var(--border); overflow:hidden; }
   .risk-limit-fill{ height:100%; width:0%; border-radius:7px; transition: width .3s ease, background .3s ease; }
 
-  .stat-card{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-card{
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
   .stat-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
   .stat-label{ font-size:12.5px; color: var(--muted); font-weight:500;}
   .stat-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background: color-mix(in srgb, var(--purple) 14%, transparent); }
@@ -357,7 +361,11 @@
   .pill .period{ color: var(--muted-2); font-weight:500; margin-right:3px;}
 
   .charts-grid{ display:grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
-  .panel{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 20px 18px; display:flex; flex-direction:column; min-width:0; }
+  .panel{
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 20px 18px;
+    display:flex; flex-direction:column; min-width:0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
   .panel-title{ font-size:14px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
   .open-pos-count-badge{
     display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px;
@@ -1069,12 +1077,10 @@
   .menu-item.active::after{ box-shadow: 0 0 6px 0px color-mix(in srgb, var(--purple-soft) 65%, transparent); }
   .brand-mark{ box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--purple) 55%, transparent); }
 
-  /* Primary buttons: deeper glow, crisper gradient. */
-  .btn-primary{
-    background: linear-gradient(135deg, var(--purple-soft), var(--purple) 60%, color-mix(in srgb, var(--purple) 70%, black));
-    box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--purple) 45%, transparent), 0 1px 2px rgba(0,0,0,0.2);
-  }
-  .btn-primary:hover{ box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--purple) 50%, transparent), 0 1px 2px rgba(0,0,0,0.25); }
+  /* Primary buttons: solid, confident fill with a crisp inner highlight —
+     the earlier diagonal gradient read as a generic "AI SaaS" pattern;
+     a flat, deliberate color reads calmer and more purpose-built. */
+  .btn-primary:hover{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 2px 5px -2px rgba(0,0,0,0.3); }
 
   /* Hero numbers get a subtle glow to feel more like a signature figure. */
   .result-hero{ position:relative; }
@@ -1768,7 +1774,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-23-navy-professional-redesign-v60
+        Build: 2026-09-23-flat-button-shapes-v61
       </div>
     </div>
   </section>
