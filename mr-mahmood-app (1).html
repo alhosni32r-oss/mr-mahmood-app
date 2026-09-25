@@ -226,33 +226,102 @@
   .account-balance-input:focus{ border-color:var(--purple-soft); }
   .account-row-actions{ display:flex; gap:8px; align-items:center; }
 
-  .menu{list-style:none; display:flex; flex-direction:column; gap:2px;}
+  .menu{list-style:none; display:flex; flex-direction:column; gap:3px;}
+  /* Each nav row gets its own tinted icon "chip" (color set per item via the
+     --item-accent custom property) plus a trailing chevron, so the whole
+     row reads as a distinct, obviously-tappable destination instead of a
+     flat list of identical gray icons — closer to how a native app's
+     settings list feels, and a clearer affordance on touch devices. */
   .menu-item{
     display:flex; align-items:center; gap:11px;
-    padding:9px 12px; border-radius:10px;
-    color: var(--muted); font-size:13.5px; font-weight:500;
-    cursor:pointer; transition: background .15s ease, color .15s ease, transform .1s ease;
+    padding:8px 10px; border-radius:12px;
+    color: var(--muted); font-size:13.5px; font-weight:600;
+    cursor:pointer; transition: background .18s ease, color .18s ease, transform .1s ease;
     position:relative; border:none; background:none; width:100%; text-align:right;
   }
-  .menu-item svg{width:17px; height:17px; flex-shrink:0;}
-  .menu-item:hover{background: rgba(255,255,255,0.04); color: var(--text);}
+  .menu-item-icon{
+    width:34px; height:34px; flex-shrink:0; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--item-accent, var(--muted)) 14%, transparent);
+    color: var(--item-accent, var(--muted));
+    transition: background .18s ease, transform .18s ease;
+  }
+  .menu-item-icon svg{width:17px; height:17px; flex-shrink:0;}
+  .menu-item-label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .menu-item-chevron{
+    width:15px; height:15px; flex-shrink:0; color: var(--muted-2); opacity:0.6;
+    transition: opacity .18s ease, transform .18s ease, color .18s ease;
+  }
+  html:dir(ltr) .menu-item-chevron{ transform: scaleX(-1); }
+  .menu-item:hover{ background: rgba(255,255,255,0.045); color: var(--text); }
+  .menu-item:hover .menu-item-icon{ background: color-mix(in srgb, var(--item-accent, var(--muted)) 24%, transparent); transform: scale(1.06); }
+  .menu-item:hover .menu-item-chevron{ opacity:1; color: var(--item-accent, var(--muted)); transform: translateX(-2px); }
+  html:dir(ltr) .menu-item:hover .menu-item-chevron{ transform: scaleX(-1) translateX(-2px); }
   .menu-item:active{ transform: scale(0.98); }
-  .menu-item.active{ background: color-mix(in srgb, var(--purple) 16%, transparent); color: var(--purple-soft); }
+  .menu-item.active{ background: color-mix(in srgb, var(--item-accent, var(--purple)) 16%, transparent); color: var(--text); }
+  .menu-item.active .menu-item-icon{ background: color-mix(in srgb, var(--item-accent, var(--purple)) 30%, transparent); box-shadow: 0 3px 8px -3px color-mix(in srgb, var(--item-accent, var(--purple)) 55%, transparent); }
+  .menu-item.active .menu-item-chevron{ opacity:1; color: var(--item-accent, var(--purple-soft)); }
   .menu-item.active::after{
     content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px;
-    background: var(--purple-soft); border-radius:3px;
+    background: var(--item-accent, var(--purple-soft)); border-radius:3px;
   }
   .sidebar-footer{ margin-top:auto; border-top: 1px solid var(--border); padding-top: 14px; }
-  .data-actions{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
-  .data-actions button{
-    display:flex; align-items:center; gap:8px;
-    background:none; border:1px solid var(--border); color:var(--muted);
-    font-size:12px; padding:7px 10px; border-radius:8px; cursor:pointer;
-    transition: color .15s ease, border-color .15s ease, transform .1s ease;
+
+  /* Settings-style rows (dark-mode toggle, PDF/JSON export, import) — the
+     same tinted icon-chip + label pattern as the nav so the whole sidebar
+     feels like one consistent, tappable list rather than two different
+     visual languages stacked on top of each other. */
+  .settings-row{
+    display:flex; align-items:center; gap:11px; width:100%;
+    background:none; border:none; color:var(--text);
+    font-size:12.5px; font-weight:600; text-align:right;
+    padding:7px 8px; border-radius:11px; cursor:pointer;
+    transition: background .18s ease, transform .1s ease;
+    position:relative;
   }
-  .data-actions button:hover{ color:var(--text); border-color:#3A3A48; }
-  .data-actions button:active{ transform: scale(0.97); }
-  .data-actions svg{ width:14px; height:14px; }
+  .settings-row:hover{ background: rgba(255,255,255,0.045); }
+  .settings-row:active{ transform: scale(0.98); }
+  .settings-row-icon{
+    width:30px; height:30px; flex-shrink:0; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--item-accent, var(--muted)) 14%, transparent);
+    color: var(--item-accent, var(--muted));
+  }
+  .settings-row-icon svg{ width:14px; height:14px; }
+  .settings-row-label{ flex:1; min-width:0; }
+  .settings-row-chevron{ width:14px; height:14px; flex-shrink:0; color:var(--muted-2); opacity:0.65; transition: opacity .18s ease, transform .18s ease; }
+  html:dir(ltr) .settings-row-chevron{ transform: scaleX(-1); }
+  .settings-row:hover .settings-row-chevron{ opacity:1; transform: translateX(-2px); }
+  html:dir(ltr) .settings-row:hover .settings-row-chevron{ transform: scaleX(-1) translateX(-2px); }
+  /* Small decorative switch mirroring the real .switch component used in
+     Settings, so the dark-mode row shows its current state at a glance
+     instead of only a static label. */
+  .settings-row-switch{
+    width:36px; height:21px; flex-shrink:0; border-radius:999px;
+    background: var(--border); position:relative; transition: background .2s ease;
+  }
+  .settings-row-switch .settings-row-switch-thumb{
+    position:absolute; top:2.5px; width:16px; height:16px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.35);
+    inset-inline-start:2.5px; transition: inset-inline-start .2s ease;
+  }
+  .settings-row-switch.on{ background: var(--purple); }
+  .settings-row-switch.on .settings-row-switch-thumb{ inset-inline-start:17px; }
+
+  .data-actions{ display:flex; flex-direction:column; gap:2px; margin-bottom:8px; }
+  .sidebar-status{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 8px 2px; margin-top:6px; border-top:1px solid var(--border);
+    font-size:10.5px; color:var(--muted-2); font-family:var(--mono);
+  }
+  .sidebar-status-left{ display:flex; align-items:center; gap:6px; }
+  .sidebar-status-dot{ width:7px; height:7px; border-radius:50%; background:var(--muted-2); flex-shrink:0; }
+  .sidebar-status-dot.on{ background: var(--green); box-shadow:0 0 5px 0 color-mix(in srgb, var(--green) 65%, transparent); }
+  .lang-pill{
+    font-family:var(--mono); font-size:10.5px; font-weight:700; color: var(--item-accent, var(--purple-soft));
+    background: color-mix(in srgb, var(--item-accent, var(--purple-soft)) 16%, transparent);
+    padding:3px 9px; border-radius:999px; flex-shrink:0;
+  }
 
   /* ---------------- Main ---------------- */
   .main{ flex:1; min-width:0; padding: 28px 34px 60px; max-width: 1400px; }
@@ -888,14 +957,6 @@
   .session-legend-time{ margin-right:auto; font-family:var(--mono); color:var(--muted); font-size:11px; }
 
 
-  .quick-toggle{
-    display:flex; align-items:center; gap:8px; width:100%;
-    background: var(--card); border:1px solid var(--border); color:var(--text);
-    padding:8px 10px; border-radius:9px; font-size:12px; cursor:pointer; margin-bottom:10px;
-  }
-  .quick-toggle svg{ width:14px; height:14px; }
-  .quick-toggle:hover{ border-color:#3A3A48; }
-
   /* ---------------- Toggle switch ---------------- */
   .switch{ position:relative; display:inline-block; width:44px; height:26px; flex-shrink:0; cursor:pointer; }
   .switch input{ position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
@@ -942,17 +1003,27 @@
       mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
       -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
     }
-    .menu-item{ white-space:nowrap; flex-shrink:0; padding:8px 12px; scroll-snap-align: start; }
+    .menu-item{ white-space:nowrap; flex-shrink:0; padding:6px 10px 6px 8px; scroll-snap-align: start; }
     .menu-item.active::after{ display:none; }
-    .menu-item.active{ box-shadow: inset 0 0 0 1px rgba(139,127,255,0.35); }
+    .menu-item.active{ box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--item-accent, var(--purple-soft)) 45%, transparent); }
+    /* The chevron only makes sense as a "forward" affordance in a vertical
+       list; in the horizontal scrolling pill row it has nothing to point
+       toward, so it's dropped here and the icon chip shrinks to keep each
+       pill compact. */
+    .menu-item-chevron{ display:none; }
+    .menu-item-icon{ width:26px; height:26px; border-radius:8px; }
+    .menu-item-icon svg{ width:14px; height:14px; }
     .sidebar-footer{
       width:100%; margin-top:0; border-top:1px solid var(--border); padding-top:10px;
       display:flex; align-items:center; gap:10px; flex-wrap:wrap; order:2;
     }
-    .quick-toggle{ width:auto; margin-bottom:0; flex:1; min-width:170px; }
+    .sidebar-footer .menu-label{ display:none; }
+    #quickThemeToggle{ width:auto; flex:1; min-width:170px; }
     .data-actions{ flex-direction:row; flex-wrap:wrap; gap:8px; margin-bottom:0; flex:2; min-width:220px; }
-    .data-actions button{ flex:1; min-width:140px; justify-content:center; }
+    .data-actions .settings-row{ flex:1; min-width:140px; }
+    .settings-row-chevron{ display:none; }
     .sidebar-footer p{ display:none; }
+    .sidebar-status{ display:none; }
     .main{ padding:22px; }
   }
 
@@ -998,8 +1069,8 @@
     .sidebar{ padding:10px 12px; }
     .brand-mark{ width:30px; height:30px; font-size:13px; }
     .brand-signature{ font-size:14.5px !important; }
-    .data-actions button{ font-size:11px; padding:6px 8px; min-width:120px; }
-    .quick-toggle{ font-size:11px; min-width:140px; }
+    .data-actions .settings-row{ font-size:11px; padding:6px 8px; min-width:120px; }
+    #quickThemeToggle{ font-size:11px; min-width:140px; }
   }
 
   /* Very small phones */
@@ -1114,56 +1185,78 @@
 
   <div class="menu-label" data-i18n="nav.menu">القائمة</div>
   <ul class="menu" style="list-style:none;">
-    <li><button class="menu-item active" data-view="dashboard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-      <span data-i18n="nav.dashboard">لوحة التحكم</span></button></li>
-    <li><button class="menu-item" data-view="calculator">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h2M8 15h2M12 15h2M16 15h2"/></svg>
-      <span data-i18n="nav.calculator">حاسبة المخاطر</span></button></li>
-    <li><button class="menu-item" data-view="journal">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
-      <span data-i18n="nav.journal">سجل التداول</span></button></li>
-    <li><button class="menu-item" data-view="notes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h4"/></svg>
-      <span data-i18n="nav.notes">الملاحظات</span></button></li>
-    <li id="correlationMenuItem"><button class="menu-item" data-view="correlation">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span data-i18n="nav.correlation">ارتباط الأزواج</span></button></li>
-    <li><button class="menu-item" data-view="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
-      <span data-i18n="nav.settings">الإعدادات</span></button></li>
-    <li><button class="menu-item" id="langToggleBtn" style="justify-content:space-between;">
-      <span style="display:flex; align-items:center; gap:11px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg>
-        <span data-i18n="nav.language">اللغة</span>
-      </span>
-      <span id="langToggleLabel" style="font-family:var(--mono); font-size:11px; font-weight:700; color:var(--purple-soft);">EN</span>
+    <li><button class="menu-item active" data-view="dashboard" style="--item-accent:var(--purple-soft);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.dashboard">لوحة التحكم</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li><button class="menu-item" data-view="calculator" style="--item-accent:var(--teal);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h2M8 15h2M12 15h2M16 15h2"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.calculator">حاسبة المخاطر</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li><button class="menu-item" data-view="journal" style="--item-accent:var(--pink);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.journal">سجل التداول</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li><button class="menu-item" data-view="notes" style="--item-accent:#F5C043;">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h4"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.notes">الملاحظات</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li id="correlationMenuItem"><button class="menu-item" data-view="correlation" style="--item-accent:var(--green);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.correlation">ارتباط الأزواج</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li><button class="menu-item" data-view="settings" style="--item-accent:var(--muted-2);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.settings">الإعدادات</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
+    <li><button class="menu-item" id="langToggleBtn" style="--item-accent:var(--purple-soft);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.language">اللغة</span>
+      <span id="langToggleLabel" class="lang-pill">EN</span>
     </button></li>
   </ul>
 
   <div class="sidebar-footer">
-    <button class="quick-toggle" id="quickThemeToggle">
-      <svg id="quickToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
-      <span id="quickToggleLabel">التبديل للوضع النهاري</span>
+    <div class="menu-label" data-i18n="sidebar.quickSettings">إعدادات سريعة</div>
+    <button class="settings-row" id="quickThemeToggle" style="--item-accent:var(--purple-soft);">
+      <span class="settings-row-icon"><svg id="quickToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg></span>
+      <span class="settings-row-label" id="quickToggleLabel">التبديل للوضع النهاري</span>
+      <span class="settings-row-switch" id="quickToggleSwitch"><span class="settings-row-switch-thumb"></span></span>
     </button>
     <div class="data-actions">
-      <button id="exportPdfBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
-        <span data-i18n="sidebar.exportPdf">تقرير PDF للمشاركة</span>
+      <button class="settings-row" id="exportPdfBtn" style="--item-accent:var(--red);">
+        <span class="settings-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></span>
+        <span class="settings-row-label" data-i18n="sidebar.exportPdf">تقرير PDF للمشاركة</span>
+        <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
-      <button id="exportBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
-        <span data-i18n="sidebar.export">تصدير البيانات (JSON)</span>
+      <button class="settings-row" id="exportBtn" style="--item-accent:var(--teal);">
+        <span class="settings-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg></span>
+        <span class="settings-row-label" data-i18n="sidebar.export">تصدير البيانات (JSON)</span>
+        <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
-      <button id="importBtn" style="position:relative;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 5v3a1 1 0 001 1h14a1 1 0 001-1V5"/></svg>
-        <span data-i18n="sidebar.import">استيراد بيانات</span>
+      <button class="settings-row" id="importBtn" style="position:relative; --item-accent:var(--green);">
+        <span class="settings-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 5v3a1 1 0 001 1h14a1 1 0 001-1V5"/></svg></span>
+        <span class="settings-row-label" data-i18n="sidebar.import">استيراد بيانات</span>
+        <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
         <input type="file" id="importFile" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
       </button>
     </div>
-    <p id="storageNote" style="font-size:10px; color:var(--muted-2); line-height:1.6;">
+    <p id="storageNote" style="font-size:10px; color:var(--muted-2); line-height:1.6; padding:0 8px;">
       بياناتك محفوظة في هذه الجلسة فقط. استخدم "تصدير" لحفظ نسخة، و"استيراد" لاستعادتها لاحقاً.
     </p>
+    <div class="sidebar-status">
+      <span class="sidebar-status-left">
+        <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
+        <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
+      </span>
+      <span id="sidebarVersionText">v63</span>
+    </div>
   </div>
 </aside>
 
@@ -1774,7 +1867,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-25-fix-omr-sessions-tdz-v62
+        Build: 2026-09-25-sidebar-nav-redesign-v63
       </div>
     </div>
   </section>
@@ -2484,6 +2577,7 @@ const TRANSLATIONS = {
     'notes.largeFileWarning': '⚠ الملف "{name}" كبير الحجم — قد يمتلئ التخزين المحلي بسرعة، يُفضّل ربط ملف حفظ تلقائي من الإعدادات.',
     'notes.storageFull': '⚠ التخزين المحلي ممتلئ — لم يتم حفظ الملاحظة في المتصفح. اربط ملف حفظ تلقائي من الإعدادات أو صدّر بياناتك لتفادي فقدانها.',
     'sidebar.export': 'تصدير البيانات (JSON)', 'sidebar.import': 'استيراد بيانات',
+    'sidebar.quickSettings': 'إعدادات سريعة', 'sidebar.connected': 'متصل', 'sidebar.offline': 'غير متصل',
 
     'dash.title': 'لوحة التحكم', 'dash.subtitle': 'نظرة شاملة على أداء تداولك',
     'dash.quickAdd': 'إضافة صفقة سريعة', 'dash.winRate': 'نسبة النجاح',
@@ -2740,6 +2834,7 @@ const TRANSLATIONS = {
     'notes.largeFileWarning': '⚠ The file "{name}" is large — local storage may fill up quickly. It\'s best to link an auto-save file from Settings.',
     'notes.storageFull': '⚠ Local storage is full — this note wasn\'t saved in the browser. Link an auto-save file from Settings or export your data to avoid losing it.',
     'sidebar.export': 'Export Data (JSON)', 'sidebar.import': 'Import Data',
+    'sidebar.quickSettings': 'Quick Settings', 'sidebar.connected': 'Connected', 'sidebar.offline': 'Offline',
 
     'dash.title': 'Dashboard', 'dash.subtitle': "A complete overview of your trading performance",
     'dash.quickAdd': 'Quick Add Trade', 'dash.winRate': 'Win Rate',
@@ -6584,6 +6679,7 @@ function applyTheme(name, skipSave){
 
   const icon = document.getElementById('quickToggleIcon');
   const label = document.getElementById('quickToggleLabel');
+  const themeSwitch = document.getElementById('quickToggleSwitch');
   if(name === 'light'){
     icon.innerHTML = sunIcon;
     label.textContent = t('theme.toDark');
@@ -6591,6 +6687,10 @@ function applyTheme(name, skipSave){
     icon.innerHTML = moonIcon;
     label.textContent = t('theme.toLight');
   }
+  // Decorative switch reflects whether dark mode is the ACTIVE state right
+  // now (any non-light theme counts as "dark"), independent of the label
+  // above which describes the action a click will perform.
+  if(themeSwitch) themeSwitch.classList.toggle('on', name !== 'light');
 
   if(document.getElementById('view-dashboard').classList.contains('active')){
     renderDashboard();
@@ -6690,6 +6790,7 @@ function switchLanguage(lang){
 
   translatePage();
   updateStorageNotes();
+  updateSidebarSyncStatus();
   applyTheme(currentTheme, true); // refresh quick toggle label/icon in the new language
   document.title = t('app.title');
 
@@ -6783,6 +6884,19 @@ const cloudStatusBox = document.getElementById('cloudStatusBox');
 const cloudAuthForm = document.getElementById('cloudAuthForm');
 const cloudConfigNote = document.getElementById('cloudConfigNote');
 
+// Compact "connected / offline" indicator in the sidebar footer, mirroring
+// the fuller cloud-sync status shown on the Settings page — lets the user
+// see their sync state at a glance from anywhere in the app, not only
+// after navigating into Settings.
+function updateSidebarSyncStatus(){
+  const dot = document.getElementById('sidebarSyncDot');
+  const text = document.getElementById('sidebarSyncText');
+  if(!dot || !text) return;
+  const connected = cloudSyncConfigured && !!cloudUser;
+  dot.classList.toggle('on', connected);
+  text.textContent = connected ? t('sidebar.connected') : t('sidebar.offline');
+}
+
 function updateCloudUI(){
   const notifyBox = document.getElementById('cloudNotifyBox');
   if(!cloudSyncConfigured){
@@ -6790,6 +6904,7 @@ function updateCloudUI(){
     cloudAuthForm.style.display = 'none';
     notifyBox.style.display = 'none';
     cloudConfigNote.textContent = t('cloud.notConfigured');
+    updateSidebarSyncStatus();
     return;
   }
   cloudConfigNote.textContent = '';
@@ -6803,6 +6918,7 @@ function updateCloudUI(){
     cloudAuthForm.style.display = 'block';
     notifyBox.style.display = 'none';
   }
+  updateSidebarSyncStatus();
 }
 
 // Pushes the current local state (accounts + notes) up to this user's
