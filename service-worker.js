@@ -2,7 +2,7 @@
 // get the latest version when online — the old v1 strategy was cache-first,
 // which meant an installed app could get permanently "stuck" on whatever
 // version was cached the very first time it was installed.
-const CACHE_NAME = 'mr-mahmood-v6';
+const CACHE_NAME = 'mr-mahmood-v7';
 const CORE_ASSETS = [
   './',
   './index.html',
