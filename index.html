@@ -399,12 +399,19 @@
 
   .stat-card{
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 10px 24px -18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .stat-card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12), 0 16px 32px -16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+    border-color: var(--muted-2);
   }
   .stat-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
   .stat-label{ font-size:12.5px; color: var(--muted); font-weight:500;}
-  .stat-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background: color-mix(in srgb, var(--purple) 14%, transparent); }
+  .stat-icon{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: color-mix(in srgb, var(--purple) 14%, transparent); transition: transform .15s ease; }
   .stat-icon svg{ width:16px; height:16px; }
+  .stat-card:hover .stat-icon{ transform: scale(1.08); }
   .stat-value{ font-size: 26px; font-weight:800; letter-spacing:-0.01em; font-family: var(--mono); margin-bottom:12px;}
   .stat-deltas{ display:flex; gap:6px; flex-wrap:wrap; }
 
@@ -433,7 +440,7 @@
   .panel{
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 20px 18px;
     display:flex; flex-direction:column; min-width:0;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 12px 28px -20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
   }
   .panel-title{ font-size:14px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
   .open-pos-count-badge{
@@ -698,10 +705,13 @@
   .field-group input, .field-group select{
     width:100%; background: var(--purple-tint); border:1px solid var(--border);
     color: var(--purple-soft); font-family:var(--mono); font-weight:700; font-size:15px;
-    padding:11px 12px; border-radius:10px; outline:none; transition: border-color .15s ease;
+    padding:11px 12px; border-radius:10px; outline:none; transition: border-color .15s ease, box-shadow .15s ease;
   }
   .field-group select{ cursor:pointer; color:var(--text); font-family:inherit; font-weight:600; }
-  .field-group input:focus, .field-group select:focus{ border-color: var(--purple-soft); }
+  .field-group input:focus, .field-group select:focus{
+    border-color: var(--purple-soft);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple-soft) 22%, transparent);
+  }
   .field-hint{ font-size:11px; color:var(--muted-2); margin-top:6px; }
 
   .result-hero{ text-align:center; padding:22px 16px; background:var(--card-2); border-radius:14px; border:2px solid var(--purple); margin-bottom:16px;}
@@ -718,6 +728,129 @@
   .gauge-fill-bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--green), #F5C043, var(--red)); transition: width .25s ease; }
   .gauge-caption{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted-2); margin-top:6px; }
   .warn-box{ display:none; margin-top:14px; padding:12px 14px; border-radius:10px; background: rgba(251,113,133,0.1); border:1px solid rgba(251,113,133,0.3); color: var(--red); font-size:12.5px; }
+
+  /* ---------------- Professional calculator: polished single card ---------------- */
+  .pc-panel{
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 12px 32px -16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .pc-section-head{ display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+  .pc-section-head-spaced{ margin-top:28px; }
+  .pc-section-icon{
+    flex:none; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal);
+  }
+  .pc-section-icon svg{ width:19px; height:19px; }
+  .pc-section-icon-alt{ background: color-mix(in srgb, var(--red) 14%, transparent); color:var(--red); }
+  .pc-section-title{ font-size:14.5px; font-weight:800; color:var(--text); margin-bottom:3px; }
+  .pc-section-sub{ font-size:12px; color:var(--muted); line-height:1.6; }
+
+  .pc-input-bar{
+    display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+    background:var(--card-2); border:1px solid var(--border);
+    border-radius:14px; padding:16px; margin-bottom:18px;
+  }
+  .pc-input-cell label{ display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:7px; text-transform:uppercase; letter-spacing:0.03em; }
+  .pc-input-cell input{
+    width:100%; background:var(--card); border:1.5px solid var(--border); border-radius:10px;
+    padding:11px 13px; color:var(--text); font-family:var(--mono); font-size:15px; font-weight:700;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .pc-input-cell input:focus{
+    outline:none; border-color:var(--teal);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent);
+  }
+  @media (max-width: 600px){
+    .pc-input-bar{ grid-template-columns: 1fr; }
+  }
+
+  .pc-risk-card{
+    display:flex; align-items:center; gap:14px; padding:18px 20px; margin-bottom:8px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--red) 16%, var(--card-2)), var(--card-2));
+    border:1.5px solid color-mix(in srgb, var(--red) 40%, var(--border)); border-radius:16px;
+  }
+  .pc-risk-icon{
+    flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--red) 22%, transparent); color:var(--red);
+  }
+  .pc-risk-icon svg{ width:22px; height:22px; }
+  .pc-risk-info{ min-width:0; }
+  .pc-risk-label{ font-size:12px; color:var(--muted); margin-bottom:2px; }
+  .pc-risk-value{ font-size:26px; font-weight:800; font-family:var(--mono); color:var(--red); line-height:1.25; }
+  .pc-risk-sub{ font-size:11.5px; color:var(--muted-2); margin-top:4px; line-height:1.5; }
+
+  .pc-scenario-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap:12px; margin-top:4px; }
+  .pc-trade-card{
+    position:relative; cursor:pointer; user-select:none;
+    display:flex; align-items:center; justify-content:center;
+    aspect-ratio: 1 / 1;
+    background:var(--card-2); border:2px solid var(--border); border-radius:14px;
+    color:transparent;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    transition: border-color .15s ease, background .15s ease, transform .12s ease, box-shadow .15s ease;
+  }
+  .pc-trade-card svg{ width:26px; height:26px; }
+  .pc-trade-card:hover{ transform: translateY(-2px); border-color: var(--muted-2); box-shadow: 0 4px 10px -4px rgba(0,0,0,0.3); }
+  .pc-trade-card:active{ transform: translateY(0) scale(0.95); }
+  .pc-trade-card.win{ border-color:var(--green); background: color-mix(in srgb, var(--green) 16%, var(--card-2)); color:var(--green); }
+  .pc-trade-card.loss{ border-color:var(--red); background: color-mix(in srgb, var(--red) 16%, var(--card-2)); color:var(--red); }
+
+  .pc-result-box{
+    margin-top:18px; display:flex; align-items:center; gap:14px; padding:18px 20px;
+    background:var(--card-2); border-radius:16px; border:1.5px solid var(--border);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .pc-result-icon{
+    flex:none; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--muted-2) 18%, transparent); color:var(--muted-2);
+    transition: background .2s ease, color .2s ease;
+  }
+  .pc-result-icon svg{ width:22px; height:22px; }
+  .pc-result-icon.win{ background: color-mix(in srgb, var(--green) 18%, transparent); color:var(--green); }
+  .pc-result-icon.loss{ background: color-mix(in srgb, var(--red) 18%, transparent); color:var(--red); }
+  .pc-result-box.win{ border-color: color-mix(in srgb, var(--green) 45%, var(--border)); }
+  .pc-result-box.loss{ border-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+  .pc-result-label{ font-size:12px; color:var(--muted); margin-bottom:3px; }
+  .pc-result-value{ font-size:26px; font-weight:800; font-family:var(--mono); color:var(--text); }
+  .pc-result-value.win{ color:var(--green); }
+  .pc-result-value.loss{ color:var(--red); }
+  .pc-scenario-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; flex-wrap:wrap; }
+
+  .pc-history{ margin-top:24px; padding-top:18px; border-top:1px solid var(--border); }
+  .pc-history-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:13.5px; font-weight:800; color:var(--text); }
+  .pc-history-head .btn-ghost{ padding:5px 10px; font-size:11.5px; }
+  .pc-history-list{ display:flex; flex-direction:column; gap:8px; }
+  .pc-history-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--card-2); border:1px solid var(--border); border-radius:12px; padding:11px 14px;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .pc-history-row:hover{ border-color:var(--muted-2); }
+  .pc-history-avatar{
+    flex:none; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background: color-mix(in srgb, var(--muted-2) 18%, transparent); color:var(--muted-2);
+  }
+  .pc-history-avatar svg{ width:16px; height:16px; }
+  .pc-history-avatar.win{ background: color-mix(in srgb, var(--green) 18%, transparent); color:var(--green); }
+  .pc-history-avatar.loss{ background: color-mix(in srgb, var(--red) 18%, transparent); color:var(--red); }
+  .pc-history-body{ flex:1; min-width:0; }
+  .pc-history-row .pc-history-date{ font-size:11.5px; color:var(--muted); }
+  .pc-history-row .pc-history-meta{ font-size:11px; color:var(--muted-2); font-family:var(--mono); margin-top:1px; }
+  .pc-history-row .pc-history-net{ font-size:14.5px; font-weight:800; font-family:var(--mono); white-space:nowrap; }
+  .pc-history-row .pc-history-net.win{ color:var(--green); }
+  .pc-history-row .pc-history-net.loss{ color:var(--red); }
+  .pc-history-row .pc-history-del{
+    flex:none; display:flex; align-items:center; justify-content:center; width:26px; height:26px;
+    background:none; border:none; border-radius:50%; color:var(--muted); cursor:pointer; padding:0;
+    transition: background .15s ease, color .15s ease;
+  }
+  .pc-history-row .pc-history-del svg{ width:14px; height:14px; }
+  .pc-history-row .pc-history-del:hover{ color:var(--red); background: color-mix(in srgb, var(--red) 14%, transparent); }
+  .pc-history-empty{ display:none; text-align:center; font-size:12.5px; color:var(--muted); padding:14px 0; }
+  .pc-history-empty.show{ display:block; }
+  @media (max-width: 900px){
+    .pc-scenario-grid{ grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:8px; }
+  }
 
   /* reference quick table */
   .ref-table-wrap{ margin-top:18px; }
@@ -1195,6 +1328,11 @@
       <span class="menu-item-label" data-i18n="nav.calculator">حاسبة المخاطر</span>
       <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
     </button></li>
+    <li><button class="menu-item" data-view="procalc" style="--item-accent:var(--red);">
+      <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></span>
+      <span class="menu-item-label" data-i18n="nav.procalc">حاسبة المحترفين</span>
+      <svg class="menu-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button></li>
     <li><button class="menu-item" data-view="journal" style="--item-accent:var(--pink);">
       <span class="menu-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
       <span class="menu-item-label" data-i18n="nav.journal">سجل التداول</span>
@@ -1260,7 +1398,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v67</span>
+      <span id="sidebarVersionText">v77</span>
     </div>
   </div>
 </aside>
@@ -1518,6 +1656,91 @@
         <thead><tr><th data-i18n="calc.thSL">نقاط وقف الخسارة</th><th data-i18n="calc.thLot">حجم اللوت</th><th data-i18n="calc.thLoss">الخسارة ($)</th><th data-i18n="calc.thPct">% من الحساب</th></tr></thead>
         <tbody id="refTableBody"></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ===================== PROFESSIONAL CALCULATOR / CYCLE PLAN ===================== -->
+  <section class="view" id="view-procalc">
+    <div class="topbar">
+      <div><h1 data-i18n="pc.title">حاسبة المحترفين — خطة إدارة رأس المال</h1><p data-i18n="pc.subtitle">قسّم رأس مالك إلى دورات منضبطة واحسب المخاطرة والهدف لكل صفقة تلقائياً</p></div>
+    </div>
+
+    <div class="panel pc-panel">
+      <div class="pc-section-head">
+        <div class="pc-section-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18"/><path d="M8 15h3"/></svg>
+        </div>
+        <div>
+          <div class="pc-section-title" data-i18n="pc.inputData">إعدادات الخطة</div>
+          <div class="pc-section-sub" data-i18n="pc.autoHint">اكتب رأس المال فقط وستتحدّث بقية الحقول تلقائياً — ويمكنك تعديلها يدوياً إن أردت.</div>
+        </div>
+      </div>
+
+      <div class="pc-input-bar">
+        <div class="pc-input-cell">
+          <label data-i18n="pc.capital">رأس المال ($)</label>
+          <input type="number" id="pcCapital" value="1000" min="1" step="1">
+        </div>
+        <div class="pc-input-cell">
+          <label data-i18n="pc.cycleAmount">مبلغ الدورة الواحدة ($)</label>
+          <input type="number" id="pcCycleAmount" value="105" min="1" step="1">
+        </div>
+        <div class="pc-input-cell">
+          <label data-i18n="pc.tradesPerCycle">عدد الصفقات في الدورة</label>
+          <input type="number" id="pcTrades" value="7" min="1" max="30" step="1">
+        </div>
+        <div class="pc-input-cell">
+          <label data-i18n="pc.profitTarget">الهدف الأدنى للربح لكل صفقة ($)</label>
+          <input type="number" id="pcProfitTarget" value="20" min="0.1" step="0.5">
+        </div>
+      </div>
+
+      <div class="pc-risk-card">
+        <div class="pc-risk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="pc-risk-info">
+          <div class="pc-risk-label" data-i18n="pc.riskPerTrade">المخاطرة لكل صفقة</div>
+          <div class="pc-risk-value" id="pcResRisk">$0</div>
+          <div class="pc-risk-sub" id="pcResCycleInfo">—</div>
+        </div>
+      </div>
+
+      <div class="pc-section-head pc-section-head-spaced">
+        <div class="pc-section-icon pc-section-icon-alt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+        </div>
+        <div>
+          <div class="pc-section-title" data-i18n="pc.scenarioTitle">جرّب دورتك</div>
+          <div class="pc-section-sub" data-i18n="pc.scenarioHint">اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير.</div>
+        </div>
+      </div>
+
+      <div id="pcScenarioGrid" class="pc-scenario-grid"></div>
+
+      <div class="pc-result-box" id="pcResultBox">
+        <div class="pc-result-icon" id="pcResultIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+        </div>
+        <div>
+          <div class="pc-result-label" data-i18n="pc.resultLabel">النتيجة</div>
+          <div class="pc-result-value" id="pcResultValue">$0.00</div>
+        </div>
+      </div>
+
+      <div class="pc-scenario-actions">
+        <button class="btn-ghost" id="pcResetScenario" type="button" data-i18n="pc.reset">↺ إعادة تعيين</button>
+        <button class="btn-primary" id="pcSaveCycle" type="button" data-i18n="pc.saveCycle">✓ حفظ الدورة وبدء جديدة</button>
+      </div>
+
+      <div class="pc-history">
+        <div class="pc-history-head">
+          <span data-i18n="pc.historyTitle">سجل الدورات السابقة</span>
+          <button class="btn-ghost" id="pcClearHistory" type="button" data-i18n="pc.clearHistory">مسح السجل</button>
+        </div>
+        <div id="pcHistoryList" class="pc-history-list"></div>
+        <div class="pc-history-empty" id="pcHistoryEmpty" data-i18n="pc.historyEmpty">لا توجد دورات محفوظة بعد — اضغط "حفظ الدورة وبدء جديدة" بعد تحديد نتائج الصفقات.</div>
+      </div>
     </div>
   </section>
 
@@ -1872,7 +2095,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-09-26-quick-currency-toggle-v67
+        Build: 2026-10-28-app-wide-professional-polish-v77
       </div>
     </div>
   </section>
@@ -2533,7 +2756,7 @@ const TRANSLATIONS = {
   ar: {
     'brand.tag': 'إدارة المخاطر وسجل التداول',
     'app.title': 'MR.MAHMOOD — حاسبة المخاطر وسجل التداول',
-    'nav.menu': 'القائمة', 'nav.dashboard': 'لوحة التحكم', 'nav.calculator': 'حاسبة المخاطر',
+    'nav.menu': 'القائمة', 'nav.dashboard': 'لوحة التحكم', 'nav.calculator': 'حاسبة المخاطر', 'nav.procalc': 'حاسبة المحترفين',
     'accounts.defaultName': 'الحساب الرئيسي', 'accounts.newDefaultName': 'حساب جديد',
     'accounts.added': 'تمت إضافة الحساب', 'accounts.deleted': 'تم حذف الحساب',
     'accounts.cannotDeleteLast': 'لا يمكن حذف آخر حساب متبقٍ',
@@ -2622,6 +2845,22 @@ const TRANSLATIONS = {
     'calc.thSL': 'نقاط وقف الخسارة', 'calc.thLot': 'حجم اللوت', 'calc.thLoss': 'الخسارة ($)', 'calc.thPct': '% من الحساب',
     'calc.warnMinLot': '⚠ حجم اللوت الناتج أقل من الحد الأدنى المعتاد (0.01) — زد وقف الخسارة أو مبلغ المخاطرة.',
     'calc.warnHighRisk': '⚠ نسبة المخاطرة أعلى من 3% من رأس المال — أعلى من الحد الموصى به عادة (1%-2%).',
+
+    'pc.title': 'حاسبة المحترفين — خطة إدارة رأس المال',
+    'pc.subtitle': 'قسّم رأس مالك إلى دورات منضبطة واحسب المخاطرة والهدف لكل صفقة تلقائياً',
+    'pc.inputData': 'إعدادات الخطة', 'pc.capital': 'رأس المال ($)',
+    'pc.cycleAmount': 'مبلغ الدورة الواحدة ($)', 'pc.tradesPerCycle': 'عدد الصفقات في الدورة',
+    'pc.profitTarget': 'الهدف الأدنى للربح لكل صفقة ($)',
+    'pc.autoHint': 'اكتب رأس المال فقط وستتحدّث بقية الحقول تلقائياً — ويمكنك تعديلها يدوياً إن أردت.',
+    'pc.riskPerTrade': 'المخاطرة لكل صفقة',
+    'pc.cycleInfoTemplate': 'دورة بقيمة {cycle} مقسّمة على {trades} صفقات، بهدف ربح {target} لكل صفقة — يكفي رأس مالك لـ {cycles} دورة تقريباً',
+    'pc.scenarioTitle': 'جرّب دورتك',
+    'pc.scenarioHint': 'اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير.',
+    'pc.reset': '↺ إعادة تعيين', 'pc.resultLabel': 'النتيجة',
+    'pc.saveCycle': '✓ حفظ الدورة وبدء جديدة',
+    'pc.historyTitle': 'سجل الدورات السابقة', 'pc.clearHistory': 'مسح السجل',
+    'pc.historyEmpty': 'لا توجد دورات محفوظة بعد — اضغط "حفظ الدورة وبدء جديدة" بعد تحديد نتائج الصفقات.',
+    'pc.historyMeta': '{wins} ربح / {losses} خسارة من {trades} صفقات',
 
     'journal.title': 'سجل التداول', 'journal.subtitle': 'سجّل كل صفقة بعد إغلاقها وتتبع أداءك أسبوعياً وشهرياً',
     'journal.addNew': 'إضافة صفقة جديدة', 'journal.filterAll': 'كل الصفقات', 'journal.filterWeek': 'هذا الأسبوع',
@@ -2790,7 +3029,7 @@ const TRANSLATIONS = {
   en: {
     'brand.tag': 'Risk Management & Trading Journal',
     'app.title': 'MR.MAHMOOD — Risk Calculator & Trading Journal',
-    'nav.menu': 'MENU', 'nav.dashboard': 'Dashboard', 'nav.calculator': 'Risk Calculator',
+    'nav.menu': 'MENU', 'nav.dashboard': 'Dashboard', 'nav.calculator': 'Risk Calculator', 'nav.procalc': 'Pro Calculator',
     'accounts.defaultName': 'Main Account', 'accounts.newDefaultName': 'New Account',
     'accounts.added': 'Account added', 'accounts.deleted': 'Account deleted',
     'accounts.cannotDeleteLast': 'You can\'t delete the last remaining account',
@@ -2879,6 +3118,22 @@ const TRANSLATIONS = {
     'calc.thSL': 'Stop Loss (pips)', 'calc.thLot': 'Lot Size', 'calc.thLoss': 'Loss ($)', 'calc.thPct': '% of Balance',
     'calc.warnMinLot': '⚠ The resulting lot size is below the usual minimum (0.01) — increase your stop loss or risk amount.',
     'calc.warnHighRisk': '⚠ Risk is above 3% of your balance — higher than the usual recommendation (1%-2%).',
+
+    'pc.title': 'Pro Calculator — Capital Management Plan',
+    'pc.subtitle': 'Split your capital into disciplined cycles and auto-calculate the risk and target per trade',
+    'pc.inputData': 'Plan Settings', 'pc.capital': 'Capital ($)',
+    'pc.cycleAmount': 'Cycle Amount ($)', 'pc.tradesPerCycle': 'Trades per Cycle',
+    'pc.profitTarget': 'Minimum Profit Target per Trade ($)',
+    'pc.autoHint': 'Just type your capital — the other fields update automatically, and you can still fine-tune them by hand.',
+    'pc.riskPerTrade': 'Risk per Trade',
+    'pc.cycleInfoTemplate': 'A {cycle} cycle split across {trades} trades, targeting {target} profit per trade — your capital covers about {cycles} cycle(s)',
+    'pc.scenarioTitle': 'Try your cycle',
+    'pc.scenarioHint': 'Tap a square: green = winning trade, red = losing trade, tap again to clear it.',
+    'pc.reset': '↺ Reset', 'pc.resultLabel': 'Result',
+    'pc.saveCycle': '✓ Save Cycle & Start New',
+    'pc.historyTitle': 'Previous Cycles', 'pc.clearHistory': 'Clear History',
+    'pc.historyEmpty': 'No saved cycles yet — tap "Save Cycle & Start New" after marking your trade results.',
+    'pc.historyMeta': '{wins} win / {losses} loss out of {trades} trades',
 
     'journal.title': 'Trade Journal', 'journal.subtitle': 'Log every trade after closing it and track your weekly/monthly performance',
     'journal.addNew': 'Add New Trade', 'journal.filterAll': 'All Trades', 'journal.filterWeek': 'This Week',
@@ -3796,6 +4051,7 @@ document.querySelectorAll('.menu-item[data-view]').forEach(btn=>{
     if(btn.dataset.view === 'journal'){ renderJournal(); renderOpenPositions(); }
     if(btn.dataset.view === 'notes') renderNotes();
     if(btn.dataset.view === 'correlation'){ populateCorrPairSelects(); }
+    if(btn.dataset.view === 'procalc') renderProCalc();
     // On the horizontally-scrollable mobile menu, make sure the page the
     // person just switched to is always fully visible — not left
     // half-scrolled-off at the edge, which is what made the nav look
@@ -3922,6 +4178,242 @@ function renderRefTable(balance, risk, pipValue){
   });
 }
 runCalculator();
+
+/* =====================================================================
+   PROFESSIONAL CALCULATOR (CYCLE-BASED CAPITAL MANAGEMENT PLAN)
+   ===================================================================== */
+const PC_SETTINGS_KEY = 'mrmahmood_procalc_v1';
+function savePcSettingsToStorage(s){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(PC_SETTINGS_KEY, JSON.stringify(s)); }catch(e){}
+}
+function loadPcSettingsFromStorage(){
+  if(!storageAvailable) return null;
+  try{
+    const raw = localStorage.getItem(PC_SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+const pcCapitalEl = document.getElementById('pcCapital');
+const pcCycleAmountEl = document.getElementById('pcCycleAmount');
+const pcTradesEl = document.getElementById('pcTrades');
+const pcProfitTargetEl = document.getElementById('pcProfitTarget');
+
+// Ratios derived from the person's own worked example (capital 1000 →
+// cycle 105, target 20): the cycle amount and the minimum profit target
+// scale automatically with capital, so typing just the capital is enough
+// to get a full, proportioned plan. Both fields stay editable afterward
+// for anyone who wants to fine-tune them by hand.
+const PC_CYCLE_PCT = 0.105;
+const PC_TARGET_PCT = 0.02;
+function pcAutoFillFromCapital(){
+  const capital = parseFloat(pcCapitalEl.value) || 0;
+  pcCycleAmountEl.value = Math.round(capital * PC_CYCLE_PCT * 100) / 100;
+  pcProfitTargetEl.value = Math.round(capital * PC_TARGET_PCT * 100) / 100;
+}
+
+let pcScenarioStates = []; // one entry per trade slot: 'neutral' | 'win' | 'loss'
+
+// Restore any previously saved plan settings so the person doesn't have
+// to re-enter their numbers every time they open this page.
+(function initPcSettings(){
+  const saved = loadPcSettingsFromStorage();
+  if(saved){
+    if(saved.capital != null) pcCapitalEl.value = saved.capital;
+    if(saved.cycleAmount != null) pcCycleAmountEl.value = saved.cycleAmount;
+    if(saved.trades != null) pcTradesEl.value = saved.trades;
+    if(saved.profitTarget != null) pcProfitTargetEl.value = saved.profitTarget;
+  }
+})();
+
+function pcComputePlan(){
+  const capital = parseFloat(pcCapitalEl.value) || 0;
+  const cycleAmount = parseFloat(pcCycleAmountEl.value) || 0;
+  let trades = Math.round(parseFloat(pcTradesEl.value)) || 0;
+  trades = Math.max(1, Math.min(30, trades));
+  const profitTarget = parseFloat(pcProfitTargetEl.value) || 0;
+
+  const riskPerTrade = trades > 0 ? cycleAmount / trades : 0;
+  const rr = riskPerTrade > 0 ? profitTarget / riskPerTrade : 0;
+  const cyclesCount = cycleAmount > 0 ? Math.floor(capital / cycleAmount) : 0;
+
+  return { capital, cycleAmount, trades, profitTarget, riskPerTrade, rr, cyclesCount };
+}
+
+function pcRenderSummaryPanels(plan){
+  document.getElementById('pcResRisk').textContent = fmtMoneyPlain(plan.riskPerTrade);
+  document.getElementById('pcResCycleInfo').textContent = plan.riskPerTrade > 0
+    ? (t('pc.cycleInfoTemplate')
+        .replace('{cycle}', fmtMoneyPlain(plan.cycleAmount))
+        .replace('{trades}', plan.trades)
+        .replace('{target}', fmtMoneyPlain(plan.profitTarget))
+        .replace('{cycles}', plan.cyclesCount))
+    : '—';
+}
+
+// Simple grid of plain squares: tap cycles neutral → win (green) → loss
+// (red) → neutral. No per-card numbers or running balance — just the
+// color/icon state, with a single combined result box below the grid.
+function pcRenderScenarioGrid(plan){
+  const grid = document.getElementById('pcScenarioGrid');
+  // Resize the states array to match the current trades-per-cycle count,
+  // keeping any states already set on the slots that still exist.
+  if(pcScenarioStates.length !== plan.trades){
+    const next = [];
+    for(let i=0; i<plan.trades; i++) next.push(pcScenarioStates[i] || 'neutral');
+    pcScenarioStates = next;
+  }
+
+  const PC_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  const PC_ICON_CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  grid.innerHTML = '';
+  pcScenarioStates.forEach((state, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'pc-trade-card' + (state !== 'neutral' ? ' ' + state : '');
+    card.innerHTML = state === 'win' ? PC_ICON_CHECK : state === 'loss' ? PC_ICON_CROSS : '';
+    card.addEventListener('click', ()=>{
+      const cur = pcScenarioStates[idx];
+      pcScenarioStates[idx] = cur === 'neutral' ? 'win' : cur === 'win' ? 'loss' : 'neutral';
+      renderProCalc(true);
+    });
+    grid.appendChild(card);
+  });
+
+  const wins = pcScenarioStates.filter(s=>s==='win').length;
+  const losses = pcScenarioStates.filter(s=>s==='loss').length;
+  const net = wins * plan.profitTarget - losses * plan.riskPerTrade;
+  const valueEl = document.getElementById('pcResultValue');
+  const iconEl = document.getElementById('pcResultIcon');
+  valueEl.textContent = fmtMoney(net);
+  valueEl.className = 'pc-result-value' + (net > 0 ? ' win' : net < 0 ? ' loss' : '');
+  iconEl.className = 'pc-result-icon' + (net > 0 ? ' win' : net < 0 ? ' loss' : '');
+
+  // Keep the latest computed scenario numbers around so the "save cycle"
+  // button can record them without recomputing from the DOM.
+  pcLastScenario = { net, wins, losses, trades: plan.trades, capital: plan.capital, cycleAmount: plan.cycleAmount };
+}
+
+/* ---------------- Cycle history (point 2: save completed cycles) ---------------- */
+const PC_HISTORY_KEY = 'mrmahmood_procalc_history_v1';
+let pcLastScenario = { net: 0, wins: 0, losses: 0, trades: 0, capital: 0, cycleAmount: 0 };
+
+function pcLoadHistory(){
+  if(!storageAvailable) return [];
+  try{
+    const raw = localStorage.getItem(PC_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function pcSaveHistoryList(list){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(PC_HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+}
+let pcHistory = pcLoadHistory();
+
+function pcRenderHistory(){
+  const listEl = document.getElementById('pcHistoryList');
+  const emptyEl = document.getElementById('pcHistoryEmpty');
+  listEl.innerHTML = '';
+  if(pcHistory.length === 0){
+    emptyEl.classList.add('show');
+    return;
+  }
+  emptyEl.classList.remove('show');
+
+  pcHistory.forEach(entry=>{
+    const row = document.createElement('div');
+    row.className = 'pc-history-row';
+    const dateStr = new Date(entry.date).toLocaleDateString(
+      currentLang==='ar' ? 'ar-EG' : 'en-US', {year:'numeric', month:'short', day:'numeric'}
+    );
+    const metaStr = t('pc.historyMeta')
+      .replace('{wins}', entry.wins)
+      .replace('{losses}', entry.losses)
+      .replace('{trades}', entry.trades);
+    const netClass = entry.net > 0 ? 'win' : entry.net < 0 ? 'loss' : '';
+    const avatarIcon = netClass === 'win'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
+      : netClass === 'loss'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/></svg>';
+    row.innerHTML = `
+      <div class="pc-history-avatar ${netClass}">${avatarIcon}</div>
+      <div class="pc-history-body">
+        <div class="pc-history-date">${dateStr}</div>
+        <div class="pc-history-meta">${metaStr}</div>
+      </div>
+      <div class="pc-history-net ${netClass}">${fmtMoney(entry.net)}</div>
+      <button class="pc-history-del" type="button" title="${t('pc.clearHistory')}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    `;
+    row.querySelector('.pc-history-del').addEventListener('click', ()=>{
+      pcHistory = pcHistory.filter(e=>e.id !== entry.id);
+      pcSaveHistoryList(pcHistory);
+      pcRenderHistory();
+    });
+    listEl.appendChild(row);
+  });
+}
+
+// keepScenario: true when re-rendering because of a scenario-card click
+// (keeps the per-slot win/loss states); false when a plan input changed,
+// which may resize the grid and is also when settings get persisted.
+function renderProCalc(keepScenario){
+  const plan = pcComputePlan();
+  pcRenderSummaryPanels(plan);
+  pcRenderScenarioGrid(plan);
+  if(!keepScenario){
+    savePcSettingsToStorage({ capital: plan.capital, cycleAmount: plan.cycleAmount, trades: plan.trades, profitTarget: plan.profitTarget });
+  }
+}
+
+pcCapitalEl.addEventListener('input', ()=>{
+  pcAutoFillFromCapital();
+  renderProCalc(false);
+});
+[pcCycleAmountEl, pcTradesEl, pcProfitTargetEl].forEach(el=>{
+  el.addEventListener('input', ()=> renderProCalc(false));
+});
+document.getElementById('pcResetScenario').addEventListener('click', ()=>{
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral');
+  renderProCalc(true);
+});
+
+// Saves the current scenario's result into the cycle history, then
+// clears the squares so the person can start a fresh cycle right away.
+document.getElementById('pcSaveCycle').addEventListener('click', ()=>{
+  pcHistory.unshift({
+    id: 'pc_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    date: new Date().toISOString(),
+    net: pcLastScenario.net,
+    wins: pcLastScenario.wins,
+    losses: pcLastScenario.losses,
+    trades: pcLastScenario.trades,
+    capital: pcLastScenario.capital,
+    cycleAmount: pcLastScenario.cycleAmount
+  });
+  if(pcHistory.length > 50) pcHistory = pcHistory.slice(0, 50);
+  pcSaveHistoryList(pcHistory);
+  pcRenderHistory();
+
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral');
+  renderProCalc(true);
+});
+
+document.getElementById('pcClearHistory').addEventListener('click', async ()=>{
+  if(pcHistory.length === 0) return;
+  const ok = await showConfirmModal(t('pc.historyTitle') + ' — ' + t('pc.clearHistory') + '؟');
+  if(!ok) return;
+  pcHistory = [];
+  pcSaveHistoryList(pcHistory);
+  pcRenderHistory();
+});
+
+renderProCalc(false);
+pcRenderHistory();
 
 /* =====================================================================
    TRADE MODAL
