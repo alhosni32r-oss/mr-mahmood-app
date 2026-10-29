@@ -789,6 +789,17 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     transition: border-color .15s ease, background .15s ease, transform .12s ease, box-shadow .15s ease;
   }
+  .pc-trade-card{ position:relative; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
+  .pc-trade-amt{ position:absolute; bottom:4px; left:0; right:0; text-align:center; font:700 11px var(--mono); direction:ltr; }
+  .pc-amt-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px; }
+  .pc-amt-box{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; width:100%; max-width:340px; box-shadow:0 20px 50px -10px rgba(0,0,0,.5); }
+  .pc-amt-box h3{ margin:0 0 4px; font-size:16px; }
+  .pc-amt-box p{ margin:0 0 12px; font-size:12px; color:var(--muted); }
+  .pc-amt-box input{ width:100%; box-sizing:border-box; padding:12px; font:600 18px var(--mono); text-align:center; direction:ltr; background:var(--card-2); color:inherit; border:1px solid var(--border); border-radius:10px; }
+  .pc-amt-row{ display:flex; gap:8px; margin-top:12px; }
+  .pc-amt-row button{ flex:1; padding:11px 8px; border-radius:10px; border:1px solid var(--border); font:600 14px inherit; font-family:inherit; cursor:pointer; background:var(--card-2); color:inherit; }
+  .pc-amt-row .w{ background:var(--green); border-color:var(--green); color:#fff; }
+  .pc-amt-row .l{ background:var(--red); border-color:var(--red); color:#fff; }
   .pc-trade-card svg{ width:26px; height:26px; }
   .pc-trade-card:hover{ transform: translateY(-2px); border-color: var(--muted-2); box-shadow: 0 4px 10px -4px rgba(0,0,0,0.3); }
   .pc-trade-card:active{ transform: translateY(0) scale(0.95); }
@@ -1398,7 +1409,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v77</span>
+      <span id="sidebarVersionText">v80</span>
     </div>
   </div>
 </aside>
@@ -1712,7 +1723,7 @@
         </div>
         <div>
           <div class="pc-section-title" data-i18n="pc.scenarioTitle">جرّب دورتك</div>
-          <div class="pc-section-sub" data-i18n="pc.scenarioHint">اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير.</div>
+          <div class="pc-section-sub" data-i18n="pc.scenarioHint">اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير. اضغط مطولاً لكتابة مبلغ الربح أو الخسارة بدقة.</div>
         </div>
       </div>
 
@@ -2095,7 +2106,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-10-28-app-wide-professional-polish-v77
+        Build: 2026-10-28-app-wide-professional-polish-v80
       </div>
     </div>
   </section>
@@ -2853,14 +2864,15 @@ const TRANSLATIONS = {
     'pc.profitTarget': 'الهدف الأدنى للربح لكل صفقة ($)',
     'pc.autoHint': 'اكتب رأس المال فقط وستتحدّث بقية الحقول تلقائياً — ويمكنك تعديلها يدوياً إن أردت.',
     'pc.riskPerTrade': 'المخاطرة لكل صفقة',
-    'pc.cycleInfoTemplate': 'دورة بقيمة {cycle} مقسّمة على {trades} صفقات، بهدف ربح {target} لكل صفقة — يكفي رأس مالك لـ {cycles} دورة تقريباً',
+    'pc.cycleInfoTemplate': 'دورة بقيمة {cycle} مقسّمة على {trades}، بهدف ربح {target} لكل صفقة — يكفي رأس مالك لـ {cycles} تقريباً',
     'pc.scenarioTitle': 'جرّب دورتك',
-    'pc.scenarioHint': 'اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير.',
+    'pc.scenarioHint': 'اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير. اضغط مطولاً لكتابة مبلغ الربح أو الخسارة بدقة.',
     'pc.reset': '↺ إعادة تعيين', 'pc.resultLabel': 'النتيجة',
     'pc.saveCycle': '✓ حفظ الدورة وبدء جديدة',
+    'pc.amtTitle': 'اكتب مبلغ الصفقة', 'pc.amtSub': 'اكتب الربح أو الخسارة الفعلية ثم اختر النوع', 'pc.amtWin': 'ربح', 'pc.amtLoss': 'خسارة', 'pc.amtClear': 'افتراضي', 'pc.amtHint': 'اضغط مطولاً على المربع لكتابة المبلغ بدقة.',
     'pc.historyTitle': 'سجل الدورات السابقة', 'pc.clearHistory': 'مسح السجل',
     'pc.historyEmpty': 'لا توجد دورات محفوظة بعد — اضغط "حفظ الدورة وبدء جديدة" بعد تحديد نتائج الصفقات.',
-    'pc.historyMeta': '{wins} ربح / {losses} خسارة من {trades} صفقات',
+    'pc.historyMeta': '{wins} ربح / {losses} خسارة من {trades}',
 
     'journal.title': 'سجل التداول', 'journal.subtitle': 'سجّل كل صفقة بعد إغلاقها وتتبع أداءك أسبوعياً وشهرياً',
     'journal.addNew': 'إضافة صفقة جديدة', 'journal.filterAll': 'كل الصفقات', 'journal.filterWeek': 'هذا الأسبوع',
@@ -3126,14 +3138,15 @@ const TRANSLATIONS = {
     'pc.profitTarget': 'Minimum Profit Target per Trade ($)',
     'pc.autoHint': 'Just type your capital — the other fields update automatically, and you can still fine-tune them by hand.',
     'pc.riskPerTrade': 'Risk per Trade',
-    'pc.cycleInfoTemplate': 'A {cycle} cycle split across {trades} trades, targeting {target} profit per trade — your capital covers about {cycles} cycle(s)',
+    'pc.cycleInfoTemplate': 'A {cycle} cycle split across {trades}, targeting {target} profit per trade — your capital covers about {cycles}',
     'pc.scenarioTitle': 'Try your cycle',
-    'pc.scenarioHint': 'Tap a square: green = winning trade, red = losing trade, tap again to clear it.',
+    'pc.scenarioHint': 'Tap a square: green = winning trade, red = losing trade, tap again to clear it. Long-press to enter an exact profit or loss amount.',
     'pc.reset': '↺ Reset', 'pc.resultLabel': 'Result',
     'pc.saveCycle': '✓ Save Cycle & Start New',
+    'pc.amtTitle': 'Enter trade amount', 'pc.amtSub': 'Type the actual profit or loss, then choose the type', 'pc.amtWin': 'Profit', 'pc.amtLoss': 'Loss', 'pc.amtClear': 'Default', 'pc.amtHint': 'Long-press a square to enter an exact amount.',
     'pc.historyTitle': 'Previous Cycles', 'pc.clearHistory': 'Clear History',
     'pc.historyEmpty': 'No saved cycles yet — tap "Save Cycle & Start New" after marking your trade results.',
-    'pc.historyMeta': '{wins} win / {losses} loss out of {trades} trades',
+    'pc.historyMeta': '{wins} win / {losses} loss out of {trades}',
 
     'journal.title': 'Trade Journal', 'journal.subtitle': 'Log every trade after closing it and track your weekly/monthly performance',
     'journal.addNew': 'Add New Trade', 'journal.filterAll': 'All Trades', 'journal.filterWeek': 'This Week',
@@ -4213,7 +4226,24 @@ function pcAutoFillFromCapital(){
   pcProfitTargetEl.value = Math.round(capital * PC_TARGET_PCT * 100) / 100;
 }
 
+const PC_SCENARIO_KEY = 'mrmahmood_procalc_scenario_v1';
 let pcScenarioStates = []; // one entry per trade slot: 'neutral' | 'win' | 'loss'
+let pcScenarioAmounts = []; // optional exact amount per slot (null = use plan default)
+// The in-progress cycle (colored squares + exact amounts) survives closing/reopening the app.
+(function(){
+  if(!storageAvailable) return;
+  try{
+    let raw = JSON.parse(localStorage.getItem(PC_SCENARIO_KEY) || '[]');
+    if(Array.isArray(raw)) raw = {states: raw, amounts: []};
+    const st = Array.isArray(raw.states) ? raw.states : [];
+    pcScenarioStates = st.filter(x=>x==='win'||x==='loss'||x==='neutral');
+    pcScenarioAmounts = (Array.isArray(raw.amounts) ? raw.amounts : []).map(a=> (typeof a==='number' && isFinite(a) && a>0) ? a : null);
+  }catch(e){}
+})();
+function pcSaveScenario(){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(PC_SCENARIO_KEY, JSON.stringify({states: pcScenarioStates, amounts: pcScenarioAmounts})); }catch(e){}
+}
 
 // Restore any previously saved plan settings so the person doesn't have
 // to re-enter their numbers every time they open this page.
@@ -4241,14 +4271,27 @@ function pcComputePlan(){
   return { capital, cycleAmount, trades, profitTarget, riskPerTrade, rr, cyclesCount };
 }
 
+function pcCount(n, kind){
+  // Correct Arabic/English counted-noun phrasing (1, 2, 3-10, 11+).
+  const w = kind==='cycle'
+    ? {ar:['دورة واحدة','دورتين','دورات','دورة','أقل من دورة'], en:['cycle','cycles']}
+    : {ar:['صفقة واحدة','صفقتين','صفقات','صفقة'], en:['trade','trades']};
+  if(currentLang==='ar'){
+    if(n<=0 && kind==='cycle') return w.ar[4];
+    if(n===1) return w.ar[0];
+    if(n===2) return w.ar[1];
+    return n + ' ' + (n<=10 ? w.ar[2] : w.ar[3]);
+  }
+  return n + ' ' + (n===1 ? w.en[0] : w.en[1]);
+}
 function pcRenderSummaryPanels(plan){
   document.getElementById('pcResRisk').textContent = fmtMoneyPlain(plan.riskPerTrade);
   document.getElementById('pcResCycleInfo').textContent = plan.riskPerTrade > 0
     ? (t('pc.cycleInfoTemplate')
         .replace('{cycle}', fmtMoneyPlain(plan.cycleAmount))
-        .replace('{trades}', plan.trades)
+        .replace('{trades}', pcCount(plan.trades,'trade'))
         .replace('{target}', fmtMoneyPlain(plan.profitTarget))
-        .replace('{cycles}', plan.cyclesCount))
+        .replace('{cycles}', pcCount(plan.cyclesCount,'cycle')))
     : '—';
 }
 
@@ -4264,6 +4307,11 @@ function pcRenderScenarioGrid(plan){
     for(let i=0; i<plan.trades; i++) next.push(pcScenarioStates[i] || 'neutral');
     pcScenarioStates = next;
   }
+  if(pcScenarioAmounts.length !== plan.trades){
+    const nextA = [];
+    for(let i=0; i<plan.trades; i++) nextA.push(pcScenarioAmounts[i] != null ? pcScenarioAmounts[i] : null);
+    pcScenarioAmounts = nextA;
+  }
 
   const PC_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   const PC_ICON_CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -4272,18 +4320,34 @@ function pcRenderScenarioGrid(plan){
   pcScenarioStates.forEach((state, idx)=>{
     const card = document.createElement('div');
     card.className = 'pc-trade-card' + (state !== 'neutral' ? ' ' + state : '');
-    card.innerHTML = state === 'win' ? PC_ICON_CHECK : state === 'loss' ? PC_ICON_CROSS : '';
+    const amt = pcScenarioAmounts[idx];
+    card.innerHTML = (state === 'win' ? PC_ICON_CHECK : state === 'loss' ? PC_ICON_CROSS : '')
+      + (state !== 'neutral' && amt != null ? '<span class="pc-trade-amt">' + (state==='win'?'+':'-') + fmtMoneyPlain(amt) + '</span>' : '');
+    // Tap cycles neutral → win → loss → neutral; long-press opens exact-amount entry.
+    let timer = null, longFired = false;
+    const cancel = ()=>{ if(timer){ clearTimeout(timer); timer = null; } };
+    card.addEventListener('pointerdown', ()=>{
+      longFired = false; cancel();
+      timer = setTimeout(()=>{ longFired = true; timer = null; pcOpenAmountDialog(idx, plan); }, 500);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>card.addEventListener(ev, cancel));
+    card.addEventListener('contextmenu', e=>e.preventDefault());
     card.addEventListener('click', ()=>{
+      if(longFired){ longFired = false; return; }
       const cur = pcScenarioStates[idx];
       pcScenarioStates[idx] = cur === 'neutral' ? 'win' : cur === 'win' ? 'loss' : 'neutral';
+      pcScenarioAmounts[idx] = null; // a plain tap goes back to the default amount
       renderProCalc(true);
     });
     grid.appendChild(card);
   });
 
-  const wins = pcScenarioStates.filter(s=>s==='win').length;
-  const losses = pcScenarioStates.filter(s=>s==='loss').length;
-  const net = wins * plan.profitTarget - losses * plan.riskPerTrade;
+  let wins = 0, losses = 0, net = 0;
+  pcScenarioStates.forEach((st, i)=>{
+    const a = pcScenarioAmounts[i];
+    if(st === 'win'){ wins++; net += (a != null ? a : plan.profitTarget); }
+    else if(st === 'loss'){ losses++; net -= (a != null ? a : plan.riskPerTrade); }
+  });
   const valueEl = document.getElementById('pcResultValue');
   const iconEl = document.getElementById('pcResultIcon');
   valueEl.textContent = fmtMoney(net);
@@ -4331,7 +4395,7 @@ function pcRenderHistory(){
     const metaStr = t('pc.historyMeta')
       .replace('{wins}', entry.wins)
       .replace('{losses}', entry.losses)
-      .replace('{trades}', entry.trades);
+      .replace('{trades}', pcCount(entry.trades,'trade'));
     const netClass = entry.net > 0 ? 'win' : entry.net < 0 ? 'loss' : '';
     const avatarIcon = netClass === 'win'
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
@@ -4358,6 +4422,36 @@ function pcRenderHistory(){
   });
 }
 
+function pcOpenAmountDialog(idx, plan){
+  const old = document.getElementById('pcAmtOverlay'); if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'pc-amt-overlay'; ov.id = 'pcAmtOverlay';
+  const cur = pcScenarioAmounts[idx];
+  ov.innerHTML = `<div class="pc-amt-box" role="dialog">
+    <h3>${t('pc.amtTitle')}</h3><p>${t('pc.amtSub')}</p>
+    <input type="number" inputmode="decimal" min="0" step="any" id="pcAmtInput" value="${cur != null ? cur : ''}" placeholder="0.00">
+    <div class="pc-amt-row"><button type="button" class="w" data-k="win">${t('pc.amtWin')}</button><button type="button" class="l" data-k="loss">${t('pc.amtLoss')}</button></div>
+    <div class="pc-amt-row"><button type="button" data-k="clear">${t('pc.amtClear')}</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const input = ov.querySelector('#pcAmtInput');
+  setTimeout(()=>input.focus(), 50);
+  const close = ()=> ov.remove();
+  ov.addEventListener('click', e=>{ if(e.target === ov) close(); });
+  ov.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{
+    const k = btn.dataset.k;
+    if(k === 'clear'){
+      pcScenarioAmounts[idx] = null;
+    } else {
+      const v = parseFloat(input.value);
+      if(!isFinite(v) || v <= 0){ input.focus(); return; }
+      pcScenarioStates[idx] = k;
+      pcScenarioAmounts[idx] = Math.round(v * 100) / 100;
+    }
+    close(); renderProCalc(true);
+  }));
+}
+
 // keepScenario: true when re-rendering because of a scenario-card click
 // (keeps the per-slot win/loss states); false when a plan input changed,
 // which may resize the grid and is also when settings get persisted.
@@ -4365,6 +4459,7 @@ function renderProCalc(keepScenario){
   const plan = pcComputePlan();
   pcRenderSummaryPanels(plan);
   pcRenderScenarioGrid(plan);
+  pcSaveScenario();
   if(!keepScenario){
     savePcSettingsToStorage({ capital: plan.capital, cycleAmount: plan.cycleAmount, trades: plan.trades, profitTarget: plan.profitTarget });
   }
@@ -4377,14 +4472,16 @@ pcCapitalEl.addEventListener('input', ()=>{
 [pcCycleAmountEl, pcTradesEl, pcProfitTargetEl].forEach(el=>{
   el.addEventListener('input', ()=> renderProCalc(false));
 });
+pcTradesEl.addEventListener('change', ()=>{ pcTradesEl.value = pcComputePlan().trades; });
 document.getElementById('pcResetScenario').addEventListener('click', ()=>{
-  pcScenarioStates = pcScenarioStates.map(()=>'neutral');
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null);
   renderProCalc(true);
 });
 
 // Saves the current scenario's result into the cycle history, then
 // clears the squares so the person can start a fresh cycle right away.
 document.getElementById('pcSaveCycle').addEventListener('click', ()=>{
+  if(pcLastScenario.wins + pcLastScenario.losses === 0) return; // nothing marked yet
   pcHistory.unshift({
     id: 'pc_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
     date: new Date().toISOString(),
@@ -4399,7 +4496,7 @@ document.getElementById('pcSaveCycle').addEventListener('click', ()=>{
   pcSaveHistoryList(pcHistory);
   pcRenderHistory();
 
-  pcScenarioStates = pcScenarioStates.map(()=>'neutral');
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null);
   renderProCalc(true);
 });
 
