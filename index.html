@@ -800,6 +800,21 @@
   .pc-amt-row button{ flex:1; padding:11px 8px; border-radius:10px; border:1px solid var(--border); font:600 14px inherit; font-family:inherit; cursor:pointer; background:var(--card-2); color:inherit; }
   .pc-amt-row .w{ background:var(--green); border-color:var(--green); color:#fff; }
   .pc-amt-row .l{ background:var(--red); border-color:var(--red); color:#fff; }
+  .pc-trade-card.linked::after{ content:''; position:absolute; top:6px; inset-inline-start:6px; width:9px; height:9px; border-radius:50%; background:currentColor; box-shadow:0 0 0 2px var(--card-2); }
+  .pc-amt-overlay{ z-index:90 !important; overflow-y:auto; align-items:flex-start !important; }
+  .pc-amt-box{ margin:auto; max-width:380px !important; }
+  .pc-amt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .pc-amt-grid label, .pc-amt-box .pc-lbl{ display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .pc-amt-box select, .pc-amt-box textarea{ width:100%; box-sizing:border-box; padding:10px; background:var(--card-2); color:inherit; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:14px; }
+  .pc-amt-box textarea{ resize:vertical; min-height:60px; }
+  .pc-amt-box .pc-lot{ font:600 15px var(--mono); direction:ltr; text-align:center; }
+  .pc-img-slot{ border:1px dashed var(--border); border-radius:10px; min-height:70px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:var(--muted); cursor:pointer; overflow:hidden; position:relative; background:var(--card-2); }
+  .pc-img-slot img{ width:100%; height:100%; max-height:110px; object-fit:cover; display:block; }
+  .pc-img-slot .pc-img-x{ position:absolute; top:4px; inset-inline-end:4px; width:22px; height:22px; border-radius:50%; border:0; background:rgba(0,0,0,.65); color:#fff; font-size:13px; line-height:22px; cursor:pointer; padding:0; }
+  .pc-log-check{ display:flex; align-items:center; gap:10px; margin-top:14px; padding:12px; border-radius:10px; background:color-mix(in srgb, var(--teal) 12%, var(--card-2)); border:1px solid color-mix(in srgb, var(--teal) 40%, var(--border)); cursor:pointer; font-weight:600; font-size:14px; }
+  .pc-log-check input{ width:20px; height:20px; accent-color:var(--teal); flex:none; }
+  .pc-log-fields{ display:none; }
+  .pc-log-fields.show{ display:block; }
   .pc-trade-card svg{ width:26px; height:26px; }
   .pc-trade-card:hover{ transform: translateY(-2px); border-color: var(--muted-2); box-shadow: 0 4px 10px -4px rgba(0,0,0,0.3); }
   .pc-trade-card:active{ transform: translateY(0) scale(0.95); }
@@ -1409,7 +1424,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v80</span>
+      <span id="sidebarVersionText">v81</span>
     </div>
   </div>
 </aside>
@@ -2106,7 +2121,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-10-28-app-wide-professional-polish-v80
+        Build: 2026-10-28-app-wide-professional-polish-v81
       </div>
     </div>
   </section>
@@ -2869,6 +2884,7 @@ const TRANSLATIONS = {
     'pc.scenarioHint': 'اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير. اضغط مطولاً لكتابة مبلغ الربح أو الخسارة بدقة.',
     'pc.reset': '↺ إعادة تعيين', 'pc.resultLabel': 'النتيجة',
     'pc.saveCycle': '✓ حفظ الدورة وبدء جديدة',
+    'pc.logTitle': 'تفاصيل الصفقة', 'pc.logSub': 'اكتب المبلغ، وحدّد إن كانت رابحة أو خاسرة', 'pc.logToJournal': 'إضافة في سجل التداول', 'pc.fPair': 'الزوج', 'pc.fDir': 'النوع', 'pc.fLot': 'حجم اللوت', 'pc.imgBefore': 'صورة قبل', 'pc.imgAfter': 'صورة بعد', 'pc.fComment': 'تعليق', 'pc.fAmount': 'المبلغ ($)', 'pc.cancel': 'إلغاء', 'pc.removeLinked': 'سيتم حذف هذه الصفقة من سجل التداول أيضاً. متابعة؟', 'pc.tradeLogged': 'تمت إضافة الصفقة إلى سجل التداول', 'pc.tradeUpdated': 'تم تحديث الصفقة في السجل', 'pc.tradeRemoved': 'تم حذف الصفقة من السجل', 'pc.linkedTap': 'هذه الصفقة مسجّلة في السجل — اضغط مطولاً للتعديل أو الحذف', 'pc.removeImg': 'إزالة',
     'pc.amtTitle': 'اكتب مبلغ الصفقة', 'pc.amtSub': 'اكتب الربح أو الخسارة الفعلية ثم اختر النوع', 'pc.amtWin': 'ربح', 'pc.amtLoss': 'خسارة', 'pc.amtClear': 'افتراضي', 'pc.amtHint': 'اضغط مطولاً على المربع لكتابة المبلغ بدقة.',
     'pc.historyTitle': 'سجل الدورات السابقة', 'pc.clearHistory': 'مسح السجل',
     'pc.historyEmpty': 'لا توجد دورات محفوظة بعد — اضغط "حفظ الدورة وبدء جديدة" بعد تحديد نتائج الصفقات.',
@@ -3143,6 +3159,7 @@ const TRANSLATIONS = {
     'pc.scenarioHint': 'Tap a square: green = winning trade, red = losing trade, tap again to clear it. Long-press to enter an exact profit or loss amount.',
     'pc.reset': '↺ Reset', 'pc.resultLabel': 'Result',
     'pc.saveCycle': '✓ Save Cycle & Start New',
+    'pc.logTitle': 'Trade details', 'pc.logSub': 'Enter the amount and mark it as a win or a loss', 'pc.logToJournal': 'Add to trading journal', 'pc.fPair': 'Pair', 'pc.fDir': 'Type', 'pc.fLot': 'Lot size', 'pc.imgBefore': 'Before image', 'pc.imgAfter': 'After image', 'pc.fComment': 'Comment', 'pc.fAmount': 'Amount ($)', 'pc.cancel': 'Cancel', 'pc.removeLinked': 'This trade will also be removed from the trading journal. Continue?', 'pc.tradeLogged': 'Trade added to the journal', 'pc.tradeUpdated': 'Trade updated in the journal', 'pc.tradeRemoved': 'Trade removed from the journal', 'pc.linkedTap': 'This trade is logged in the journal — long-press to edit or delete', 'pc.removeImg': 'Remove',
     'pc.amtTitle': 'Enter trade amount', 'pc.amtSub': 'Type the actual profit or loss, then choose the type', 'pc.amtWin': 'Profit', 'pc.amtLoss': 'Loss', 'pc.amtClear': 'Default', 'pc.amtHint': 'Long-press a square to enter an exact amount.',
     'pc.historyTitle': 'Previous Cycles', 'pc.clearHistory': 'Clear History',
     'pc.historyEmpty': 'No saved cycles yet — tap "Save Cycle & Start New" after marking your trade results.',
@@ -4229,6 +4246,7 @@ function pcAutoFillFromCapital(){
 const PC_SCENARIO_KEY = 'mrmahmood_procalc_scenario_v1';
 let pcScenarioStates = []; // one entry per trade slot: 'neutral' | 'win' | 'loss'
 let pcScenarioAmounts = []; // optional exact amount per slot (null = use plan default)
+let pcScenarioLinks = [];   // journal trade id per slot (null = not logged in the journal)
 // The in-progress cycle (colored squares + exact amounts) survives closing/reopening the app.
 (function(){
   if(!storageAvailable) return;
@@ -4237,12 +4255,13 @@ let pcScenarioAmounts = []; // optional exact amount per slot (null = use plan d
     if(Array.isArray(raw)) raw = {states: raw, amounts: []};
     const st = Array.isArray(raw.states) ? raw.states : [];
     pcScenarioStates = st.filter(x=>x==='win'||x==='loss'||x==='neutral');
+    pcScenarioLinks = (Array.isArray(raw.links) ? raw.links : []).map(x=> typeof x==='string' ? x : null);
     pcScenarioAmounts = (Array.isArray(raw.amounts) ? raw.amounts : []).map(a=> (typeof a==='number' && isFinite(a) && a>0) ? a : null);
   }catch(e){}
 })();
 function pcSaveScenario(){
   if(!storageAvailable) return;
-  try{ localStorage.setItem(PC_SCENARIO_KEY, JSON.stringify({states: pcScenarioStates, amounts: pcScenarioAmounts})); }catch(e){}
+  try{ localStorage.setItem(PC_SCENARIO_KEY, JSON.stringify({states: pcScenarioStates, amounts: pcScenarioAmounts, links: pcScenarioLinks})); }catch(e){}
 }
 
 // Restore any previously saved plan settings so the person doesn't have
@@ -4312,6 +4331,11 @@ function pcRenderScenarioGrid(plan){
     for(let i=0; i<plan.trades; i++) nextA.push(pcScenarioAmounts[i] != null ? pcScenarioAmounts[i] : null);
     pcScenarioAmounts = nextA;
   }
+  if(pcScenarioLinks.length !== plan.trades){
+    const nextL = [];
+    for(let i=0; i<plan.trades; i++) nextL.push(pcScenarioLinks[i] || null);
+    pcScenarioLinks = nextL;
+  }
 
   const PC_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   const PC_ICON_CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -4319,7 +4343,7 @@ function pcRenderScenarioGrid(plan){
   grid.innerHTML = '';
   pcScenarioStates.forEach((state, idx)=>{
     const card = document.createElement('div');
-    card.className = 'pc-trade-card' + (state !== 'neutral' ? ' ' + state : '');
+    card.className = 'pc-trade-card' + (state !== 'neutral' ? ' ' + state : '') + (pcScenarioLinks[idx] ? ' linked' : '');
     const amt = pcScenarioAmounts[idx];
     card.innerHTML = (state === 'win' ? PC_ICON_CHECK : state === 'loss' ? PC_ICON_CROSS : '')
       + (state !== 'neutral' && amt != null ? '<span class="pc-trade-amt">' + (state==='win'?'+':'-') + fmtMoneyPlain(amt) + '</span>' : '');
@@ -4334,6 +4358,7 @@ function pcRenderScenarioGrid(plan){
     card.addEventListener('contextmenu', e=>e.preventDefault());
     card.addEventListener('click', ()=>{
       if(longFired){ longFired = false; return; }
+      if(pcScenarioLinks[idx]){ showToast(t('pc.linkedTap')); return; }
       const cur = pcScenarioStates[idx];
       pcScenarioStates[idx] = cur === 'neutral' ? 'win' : cur === 'win' ? 'loss' : 'neutral';
       pcScenarioAmounts[idx] = null; // a plain tap goes back to the default amount
@@ -4422,31 +4447,155 @@ function pcRenderHistory(){
   });
 }
 
+function pcTodayStr(){
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function pcRefreshJournal(){
+  trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
+  saveTradesToStorage();
+  syncActiveAccountTrades();
+  renderDashboard();
+  renderJournal();
+}
+function pcRemoveJournalTrade(id){
+  trades = trades.filter(x=>x.id !== id);
+  saveTradesToStorage();
+  syncActiveAccountTrades();
+  deleteFromCloud('trades', id);
+  renderDashboard();
+  renderJournal();
+}
 function pcOpenAmountDialog(idx, plan){
   const old = document.getElementById('pcAmtOverlay'); if(old) old.remove();
+  // A link to a trade that was deleted from the journal meanwhile is stale.
+  let linkedId = pcScenarioLinks[idx];
+  let linked = linkedId ? trades.find(x=>x.id === linkedId) : null;
+  if(linkedId && !linked){ pcScenarioLinks[idx] = linkedId = null; }
+
+  const cur = pcScenarioAmounts[idx];
+  const pairs = Object.keys(PAIRS);
+  const pairOpts = pairs.map(pp=>`<option value="${pp}"${linked && linked.pair===pp ? ' selected' : ''}>${pp}</option>`).join('');
+  const dir = linked ? linked.direction : 'شراء';
+  let imgBefore = linked ? (linked.imageBefore || null) : null;
+  let imgAfter = linked ? (linked.imageAfter || null) : null;
+
   const ov = document.createElement('div');
   ov.className = 'pc-amt-overlay'; ov.id = 'pcAmtOverlay';
-  const cur = pcScenarioAmounts[idx];
   ov.innerHTML = `<div class="pc-amt-box" role="dialog">
-    <h3>${t('pc.amtTitle')}</h3><p>${t('pc.amtSub')}</p>
-    <input type="number" inputmode="decimal" min="0" step="any" id="pcAmtInput" value="${cur != null ? cur : ''}" placeholder="0.00">
+    <h3>${t('pc.logTitle')}</h3><p>${t('pc.logSub')}</p>
+    <label class="pc-lbl">${t('pc.fAmount')}</label>
+    <input type="number" inputmode="decimal" min="0" step="any" id="pcAmtInput" value="${cur != null ? cur : (linked ? Math.abs(linked.pl) : '')}" placeholder="0.00">
+    <label class="pc-log-check"><input type="checkbox" id="pcLogCheck"${linked ? ' checked' : ''}><span>${t('pc.logToJournal')}</span></label>
+    <div class="pc-log-fields${linked ? ' show' : ''}" id="pcLogFields">
+      <div class="pc-amt-grid">
+        <div><label>${t('pc.fPair')}</label><select id="pcPair">${pairOpts}</select></div>
+        <div><label>${t('pc.fDir')}</label><select id="pcDir"><option value="شراء"${dir==='شراء'?' selected':''}>${t('modal.buy')}</option><option value="بيع"${dir==='بيع'?' selected':''}>${t('modal.sell')}</option></select></div>
+      </div>
+      <div class="pc-amt-grid">
+        <div><label>${t('pc.fLot')}</label><input type="number" inputmode="decimal" min="0" step="any" id="pcLot" class="pc-lot" value="${linked && linked.lot ? linked.lot : ''}" placeholder="0.01"></div>
+        <div></div>
+      </div>
+      <div class="pc-amt-grid">
+        <div><label>${t('pc.imgBefore')}</label><div class="pc-img-slot" id="pcSlotBefore"></div></div>
+        <div><label>${t('pc.imgAfter')}</label><div class="pc-img-slot" id="pcSlotAfter"></div></div>
+      </div>
+      <label class="pc-lbl" style="margin-top:10px">${t('pc.fComment')}</label>
+      <textarea id="pcComment">${linked && linked.comment ? linked.comment.replace(/&/g,'&amp;').replace(/</g,'&lt;') : ''}</textarea>
+    </div>
+    <input type="file" accept="image/*" id="pcFileBefore" hidden><input type="file" accept="image/*" id="pcFileAfter" hidden>
     <div class="pc-amt-row"><button type="button" class="w" data-k="win">${t('pc.amtWin')}</button><button type="button" class="l" data-k="loss">${t('pc.amtLoss')}</button></div>
-    <div class="pc-amt-row"><button type="button" data-k="clear">${t('pc.amtClear')}</button></div>
+    <div class="pc-amt-row"><button type="button" data-k="clear">${t('pc.amtClear')}</button><button type="button" data-k="cancel">${t('pc.cancel')}</button></div>
   </div>`;
   document.body.appendChild(ov);
-  const input = ov.querySelector('#pcAmtInput');
+  const q = id=>ov.querySelector('#'+id);
+  const input = q('pcAmtInput');
   setTimeout(()=>input.focus(), 50);
   const close = ()=> ov.remove();
   ov.addEventListener('click', e=>{ if(e.target === ov) close(); });
-  ov.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{
+
+  q('pcLogCheck').addEventListener('change', e=> q('pcLogFields').classList.toggle('show', e.target.checked));
+
+  function paintSlot(slotId, url, txt){
+    const slot = q(slotId);
+    slot.innerHTML = url ? `<img src="${url}" alt=""><button type="button" class="pc-img-x" aria-label="${t('pc.removeImg')}">×</button>` : `<span>＋ ${txt}</span>`;
+    const x = slot.querySelector('.pc-img-x');
+    if(x) x.addEventListener('click', e=>{ e.stopPropagation(); if(slotId==='pcSlotBefore') imgBefore = null; else imgAfter = null; paintSlot(slotId, null, txt); });
+  }
+  paintSlot('pcSlotBefore', imgBefore, t('pc.imgBefore'));
+  paintSlot('pcSlotAfter', imgAfter, t('pc.imgAfter'));
+  function wirePick(slotId, fileId, txt, isBefore){
+    q(slotId).addEventListener('click', ()=> q(fileId).click());
+    q(fileId).addEventListener('change', e=>{
+      const file = e.target.files[0]; e.target.value = '';
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        ieContext = 'trade';
+        openImageEditor(reader.result, (finalUrl)=>{
+          if(isBefore) imgBefore = finalUrl; else imgAfter = finalUrl;
+          paintSlot(slotId, finalUrl, txt);
+        });
+      };
+      reader.onerror = ()=> showToast(t('imgEditor.loadFailed'));
+      reader.readAsDataURL(file);
+    });
+  }
+  wirePick('pcSlotBefore', 'pcFileBefore', t('pc.imgBefore'), true);
+  wirePick('pcSlotAfter', 'pcFileAfter', t('pc.imgAfter'), false);
+
+  ov.querySelectorAll('.pc-amt-row button').forEach(btn=>btn.addEventListener('click', async ()=>{
     const k = btn.dataset.k;
+    if(k === 'cancel'){ close(); return; }
     if(k === 'clear'){
+      if(linked){
+        if(!(await showConfirmModal(t('pc.removeLinked')))) return;
+        pcRemoveJournalTrade(linked.id);
+        pcScenarioLinks[idx] = null;
+        showToast(t('pc.tradeRemoved'));
+      }
       pcScenarioAmounts[idx] = null;
-    } else {
-      const v = parseFloat(input.value);
-      if(!isFinite(v) || v <= 0){ input.focus(); return; }
-      pcScenarioStates[idx] = k;
-      pcScenarioAmounts[idx] = Math.round(v * 100) / 100;
+      pcScenarioStates[idx] = 'neutral';
+      close(); renderProCalc(true);
+      return;
+    }
+    const raw = parseFloat(input.value);
+    const amount = (isFinite(raw) && raw > 0) ? Math.round(raw * 100) / 100 : null;
+    const wantLog = q('pcLogCheck').checked;
+    if(wantLog && amount == null){ input.focus(); return; }  // exact amount needed for the journal
+    if(!wantLog && amount == null && !linked){ input.focus(); return; }
+    const finalAmount = amount != null ? amount : (k === 'win' ? plan.profitTarget : plan.riskPerTrade);
+
+    pcScenarioStates[idx] = k;
+    pcScenarioAmounts[idx] = amount;
+
+    if(wantLog){
+      const data = {
+        pair: q('pcPair').value,
+        direction: q('pcDir').value,
+        lot: parseFloat(q('pcLot').value) || 0,
+        result: k === 'win' ? 'رابحة' : 'خاسرة',
+        pl: k === 'win' ? finalAmount : -finalAmount,
+        comment: q('pcComment').value.trim(),
+        imageBefore: imgBefore, imageAfter: imgAfter,
+        updatedAt: Date.now()
+      };
+      if(linked){
+        Object.assign(linked, data);
+        showToast(t('pc.tradeUpdated'));
+      } else {
+        const trade = Object.assign({ id: uid(), date: pcTodayStr(), sl: 0, tp: 0, images: [], entryTimestamp: null, exitTimestamp: null, source: 'procalc' }, data);
+        trades.push(trade);
+        pcScenarioLinks[idx] = trade.id;
+        showToast(t('pc.tradeLogged'));
+      }
+      pcRefreshJournal();
+    } else if(linked){
+      // Unticked on a logged square: take it out of the journal.
+      if(!(await showConfirmModal(t('pc.removeLinked')))) return;
+      pcRemoveJournalTrade(linked.id);
+      pcScenarioLinks[idx] = null;
+      showToast(t('pc.tradeRemoved'));
     }
     close(); renderProCalc(true);
   }));
@@ -4474,7 +4623,7 @@ pcCapitalEl.addEventListener('input', ()=>{
 });
 pcTradesEl.addEventListener('change', ()=>{ pcTradesEl.value = pcComputePlan().trades; });
 document.getElementById('pcResetScenario').addEventListener('click', ()=>{
-  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null);
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null); pcScenarioLinks = pcScenarioLinks.map(()=>null);
   renderProCalc(true);
 });
 
@@ -4496,7 +4645,7 @@ document.getElementById('pcSaveCycle').addEventListener('click', ()=>{
   pcSaveHistoryList(pcHistory);
   pcRenderHistory();
 
-  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null);
+  pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null); pcScenarioLinks = pcScenarioLinks.map(()=>null);
   renderProCalc(true);
 });
 
