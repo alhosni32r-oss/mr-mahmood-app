@@ -450,7 +450,7 @@
   }
   .equity-canvas-wrap{ height:210px; position:relative; }
   .gauge-wrap{ position:relative; height:150px; display:flex; align-items:center; justify-content:center; }
-  .gauge-center{ position:absolute; top:58%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .gauge-center{ pointer-events:none; position:absolute; top:58%; left:50%; transform:translate(-50%,-50%); text-align:center; }
   .gauge-center .pct{ font-size:28px; font-weight:800; font-family:var(--mono); }
   .gauge-center .lbl{ font-size:11px; color:var(--muted); margin-top:2px; }
   .gauge-scale{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted-2); margin-top:4px; font-family:var(--mono); }
@@ -1424,7 +1424,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v81</span>
+      <span id="sidebarVersionText">v83</span>
     </div>
   </div>
 </aside>
@@ -2121,7 +2121,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-10-28-app-wide-professional-polish-v81
+        Build: 2026-10-28-app-wide-professional-polish-v83
       </div>
     </div>
   </section>
@@ -2884,6 +2884,7 @@ const TRANSLATIONS = {
     'pc.scenarioHint': 'اضغط على المربع: أخضر = صفقة رابحة، أحمر = صفقة خاسرة، اضغط مرة أخرى للتصفير. اضغط مطولاً لكتابة مبلغ الربح أو الخسارة بدقة.',
     'pc.reset': '↺ إعادة تعيين', 'pc.resultLabel': 'النتيجة',
     'pc.saveCycle': '✓ حفظ الدورة وبدء جديدة',
+    'pc.confirmChange': 'هل أنت متأكد من حذف هذه الصفقة؟ سيُمسح المبلغ الذي كتبته.', 'pc.confirmReset': 'هل أنت متأكد من مسح كل المربعات؟ ستُحذف المبالغ التي كتبتها (الصفقات المسجّلة في السجل تبقى).',
     'pc.logTitle': 'تفاصيل الصفقة', 'pc.logSub': 'اكتب المبلغ، وحدّد إن كانت رابحة أو خاسرة', 'pc.logToJournal': 'إضافة في سجل التداول', 'pc.fPair': 'الزوج', 'pc.fDir': 'النوع', 'pc.fLot': 'حجم اللوت', 'pc.imgBefore': 'صورة قبل', 'pc.imgAfter': 'صورة بعد', 'pc.fComment': 'تعليق', 'pc.fAmount': 'المبلغ ($)', 'pc.cancel': 'إلغاء', 'pc.removeLinked': 'سيتم حذف هذه الصفقة من سجل التداول أيضاً. متابعة؟', 'pc.tradeLogged': 'تمت إضافة الصفقة إلى سجل التداول', 'pc.tradeUpdated': 'تم تحديث الصفقة في السجل', 'pc.tradeRemoved': 'تم حذف الصفقة من السجل', 'pc.linkedTap': 'هذه الصفقة مسجّلة في السجل — اضغط مطولاً للتعديل أو الحذف', 'pc.removeImg': 'إزالة',
     'pc.amtTitle': 'اكتب مبلغ الصفقة', 'pc.amtSub': 'اكتب الربح أو الخسارة الفعلية ثم اختر النوع', 'pc.amtWin': 'ربح', 'pc.amtLoss': 'خسارة', 'pc.amtClear': 'افتراضي', 'pc.amtHint': 'اضغط مطولاً على المربع لكتابة المبلغ بدقة.',
     'pc.historyTitle': 'سجل الدورات السابقة', 'pc.clearHistory': 'مسح السجل',
@@ -3159,6 +3160,7 @@ const TRANSLATIONS = {
     'pc.scenarioHint': 'Tap a square: green = winning trade, red = losing trade, tap again to clear it. Long-press to enter an exact profit or loss amount.',
     'pc.reset': '↺ Reset', 'pc.resultLabel': 'Result',
     'pc.saveCycle': '✓ Save Cycle & Start New',
+    'pc.confirmChange': 'Are you sure you want to delete this trade? The amount you typed will be erased.', 'pc.confirmReset': 'Clear all squares? The amounts you typed will be erased (trades logged in the journal stay).',
     'pc.logTitle': 'Trade details', 'pc.logSub': 'Enter the amount and mark it as a win or a loss', 'pc.logToJournal': 'Add to trading journal', 'pc.fPair': 'Pair', 'pc.fDir': 'Type', 'pc.fLot': 'Lot size', 'pc.imgBefore': 'Before image', 'pc.imgAfter': 'After image', 'pc.fComment': 'Comment', 'pc.fAmount': 'Amount ($)', 'pc.cancel': 'Cancel', 'pc.removeLinked': 'This trade will also be removed from the trading journal. Continue?', 'pc.tradeLogged': 'Trade added to the journal', 'pc.tradeUpdated': 'Trade updated in the journal', 'pc.tradeRemoved': 'Trade removed from the journal', 'pc.linkedTap': 'This trade is logged in the journal — long-press to edit or delete', 'pc.removeImg': 'Remove',
     'pc.amtTitle': 'Enter trade amount', 'pc.amtSub': 'Type the actual profit or loss, then choose the type', 'pc.amtWin': 'Profit', 'pc.amtLoss': 'Loss', 'pc.amtClear': 'Default', 'pc.amtHint': 'Long-press a square to enter an exact amount.',
     'pc.historyTitle': 'Previous Cycles', 'pc.clearHistory': 'Clear History',
@@ -4356,9 +4358,14 @@ function pcRenderScenarioGrid(plan){
     });
     ['pointerup','pointerleave','pointercancel'].forEach(ev=>card.addEventListener(ev, cancel));
     card.addEventListener('contextmenu', e=>e.preventDefault());
-    card.addEventListener('click', ()=>{
+    card.addEventListener('click', async ()=>{
       if(longFired){ longFired = false; return; }
       if(pcScenarioLinks[idx]){ showToast(t('pc.linkedTap')); return; }
+      // A square holding an exact amount the person typed is protected: a stray tap
+      // must not silently wipe it.
+      if(pcScenarioAmounts[idx] != null){
+        if(!(await showConfirmModal(t('pc.confirmChange')))) return;
+      }
       const cur = pcScenarioStates[idx];
       pcScenarioStates[idx] = cur === 'neutral' ? 'win' : cur === 'win' ? 'loss' : 'neutral';
       pcScenarioAmounts[idx] = null; // a plain tap goes back to the default amount
@@ -4622,7 +4629,9 @@ pcCapitalEl.addEventListener('input', ()=>{
   el.addEventListener('input', ()=> renderProCalc(false));
 });
 pcTradesEl.addEventListener('change', ()=>{ pcTradesEl.value = pcComputePlan().trades; });
-document.getElementById('pcResetScenario').addEventListener('click', ()=>{
+document.getElementById('pcResetScenario').addEventListener('click', async ()=>{
+  const hasWork = pcScenarioAmounts.some(a=>a != null) || pcScenarioStates.some(x=>x !== 'neutral');
+  if(hasWork && !(await showConfirmModal(t('pc.confirmReset')))) return;
   pcScenarioStates = pcScenarioStates.map(()=>'neutral'); pcScenarioAmounts = pcScenarioAmounts.map(()=>null); pcScenarioLinks = pcScenarioLinks.map(()=>null);
   renderProCalc(true);
 });
@@ -6056,8 +6065,25 @@ function renderCharts(stats){
   if(charts.gauge) charts.gauge.destroy();
   charts.gauge = new Chart(document.getElementById('gaugeChart'), {
     type:'doughnut',
-    data:{ datasets:[{ data:[winPct||0.001, 100-(winPct||0.001)], backgroundColor:[cGreen,cRed], borderWidth:0, circumference:180, rotation:270, cutout:'75%' }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{enabled:false}} }
+    data:{ labels:[t('modal.win'), t('modal.loss')], datasets:[{ data:[winPct||0.001, 100-(winPct||0.001)], backgroundColor:[cGreen,cRed], borderWidth:0, circumference:180, rotation:270, cutout:'75%' }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      events:['mousemove','click','touchstart'],  // no mouseout: on phones the tooltip stays until the next tap
+      plugins:{legend:{display:false},
+        // Tapping/hovering a slice shows how many trades it represents.
+        tooltip:{ enabled:true, backgroundColor:cCard2, borderColor:cBorder, borderWidth:1, titleColor:cMuted, bodyColor:cText, padding:10, displayColors:true,
+          bodyFont:{ size:14, weight:'bold' },
+          callbacks:{
+            title: ()=>'',
+            label: (ctx)=>{
+              const isWin = ctx.dataIndex === 0;
+              const n = isWin ? stats.wins.length : stats.losses.length;
+              return ' ' + (isWin ? t('modal.win') : t('modal.loss')) + ': ' + pcCount(n,'trade');
+            },
+            afterLabel: (ctx)=>{
+              const be = stats.total - stats.wins.length - stats.losses.length;
+              return (ctx.dataIndex === 1 && be > 0) ? ' ' + t('modal.breakeven') + ': ' + pcCount(be,'trade') : '';
+            }
+          } } } }
   });
 
   // performance donut
