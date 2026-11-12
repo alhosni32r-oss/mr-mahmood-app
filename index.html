@@ -1424,7 +1424,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v83</span>
+      <span id="sidebarVersionText">v84</span>
     </div>
   </div>
 </aside>
@@ -2121,7 +2121,7 @@
         MR.MAHMOOD — حاسبة حجم اللوت وسجل تداول شخصي.
       </div>
       <div class="settings-sub" style="margin-top:10px; margin-bottom:0; font-family:var(--mono); font-size:11px; opacity:0.7;">
-        Build: 2026-10-28-app-wide-professional-polish-v83
+        Build: 2026-10-28-app-wide-professional-polish-v84
       </div>
     </div>
   </section>
@@ -4215,9 +4215,35 @@ runCalculator();
    PROFESSIONAL CALCULATOR (CYCLE-BASED CAPITAL MANAGEMENT PLAN)
    ===================================================================== */
 const PC_SETTINGS_KEY = 'mrmahmood_procalc_v1';
+
+// ---- Cross-device sync state (see "PRO CALCULATOR CLOUD SYNC" below) ----
+// pcSyncMuted: true while loading/applying remote data, so those writes are not
+// mistaken for a person's own edits (which would bump timestamps and push back).
+let pcSyncMuted = true;
+const PC_SYNC_KEY = 'mrmahmood_procalc_sync_v1';
+let pcSync = { settingsAt: 0, scenarioAt: 0, deletedIds: [] };
+try{
+  const r = JSON.parse(localStorage.getItem(PC_SYNC_KEY) || 'null');
+  if(r) pcSync = { settingsAt: +r.settingsAt || 0, scenarioAt: +r.scenarioAt || 0, deletedIds: Array.isArray(r.deletedIds) ? r.deletedIds.slice(-200) : [] };
+}catch(e){}
+function pcPersistSync(){
+  if(!storageAvailable) return;
+  try{ localStorage.setItem(PC_SYNC_KEY, JSON.stringify(pcSync)); }catch(e){}
+}
+function pcNoteChange(kind){
+  if(pcSyncMuted) return;
+  if(kind === 'settings') pcSync.settingsAt = Date.now();
+  if(kind === 'scenario') pcSync.scenarioAt = Date.now();
+  pcPersistSync();
+  pcSchedulePush();
+}
 function savePcSettingsToStorage(s){
   if(!storageAvailable) return;
-  try{ localStorage.setItem(PC_SETTINGS_KEY, JSON.stringify(s)); }catch(e){}
+  try{
+    const prev = localStorage.getItem(PC_SETTINGS_KEY), next = JSON.stringify(s);
+    localStorage.setItem(PC_SETTINGS_KEY, next);
+    if(prev !== next) pcNoteChange('settings');
+  }catch(e){}
 }
 function loadPcSettingsFromStorage(){
   if(!storageAvailable) return null;
@@ -4263,7 +4289,11 @@ let pcScenarioLinks = [];   // journal trade id per slot (null = not logged in t
 })();
 function pcSaveScenario(){
   if(!storageAvailable) return;
-  try{ localStorage.setItem(PC_SCENARIO_KEY, JSON.stringify({states: pcScenarioStates, amounts: pcScenarioAmounts, links: pcScenarioLinks})); }catch(e){}
+  try{
+    const prev = localStorage.getItem(PC_SCENARIO_KEY), next = JSON.stringify({states: pcScenarioStates, amounts: pcScenarioAmounts, links: pcScenarioLinks});
+    localStorage.setItem(PC_SCENARIO_KEY, next);
+    if(prev !== next) pcNoteChange('scenario');
+  }catch(e){}
 }
 
 // Restore any previously saved plan settings so the person doesn't have
@@ -4404,7 +4434,11 @@ function pcLoadHistory(){
 }
 function pcSaveHistoryList(list){
   if(!storageAvailable) return;
-  try{ localStorage.setItem(PC_HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+  try{
+    const prev = localStorage.getItem(PC_HISTORY_KEY), next = JSON.stringify(list);
+    localStorage.setItem(PC_HISTORY_KEY, next);
+    if(prev !== next) pcNoteChange('history');
+  }catch(e){}
 }
 let pcHistory = pcLoadHistory();
 
@@ -4446,6 +4480,7 @@ function pcRenderHistory(){
       </button>
     `;
     row.querySelector('.pc-history-del').addEventListener('click', ()=>{
+      pcMarkDeleted([entry.id]);
       pcHistory = pcHistory.filter(e=>e.id !== entry.id);
       pcSaveHistoryList(pcHistory);
       pcRenderHistory();
@@ -4662,6 +4697,7 @@ document.getElementById('pcClearHistory').addEventListener('click', async ()=>{
   if(pcHistory.length === 0) return;
   const ok = await showConfirmModal(t('pc.historyTitle') + ' — ' + t('pc.clearHistory') + '؟');
   if(!ok) return;
+  pcMarkDeleted(pcHistory.map(e=>e.id));
   pcHistory = [];
   pcSaveHistoryList(pcHistory);
   pcRenderHistory();
@@ -4669,6 +4705,115 @@ document.getElementById('pcClearHistory').addEventListener('click', async ()=>{
 
 renderProCalc(false);
 pcRenderHistory();
+pcSyncMuted = false;
+
+/* =====================================================================
+   PRO CALCULATOR CLOUD SYNC
+   One small Firestore document (users/{uid}/meta/procalc) carries the plan
+   settings, the in-progress cycle and the saved-cycles history, so every
+   device signed in with the same account shows the same thing.
+   - settings and the in-progress cycle: the most recent edit wins
+   - history: merged by id (nothing is lost), with deleted ids remembered
+   ===================================================================== */
+function pcMarkDeleted(ids){
+  const set = new Set([...(pcSync.deletedIds || []), ...ids]);
+  pcSync.deletedIds = [...set].slice(-200);
+  pcPersistSync();
+}
+function pcBuildDoc(){
+  return {
+    v: 1,
+    settings: loadPcSettingsFromStorage() || null,
+    settingsAt: pcSync.settingsAt,
+    scenario: { states: pcScenarioStates, amounts: pcScenarioAmounts, links: pcScenarioLinks },
+    scenarioAt: pcSync.scenarioAt,
+    history: pcHistory,
+    deletedIds: pcSync.deletedIds
+  };
+}
+function pcDocSig(d){
+  return JSON.stringify([d.settings || null, +d.settingsAt || 0, d.scenario || null, +d.scenarioAt || 0,
+    (d.history || []).map(e=>e.id).sort(), (d.deletedIds || []).slice().sort()]);
+}
+function pcApplyRemote(d){
+  if(!d) return;
+  pcSyncMuted = true;
+  try{
+    const del = new Set([...(pcSync.deletedIds || []), ...(Array.isArray(d.deletedIds) ? d.deletedIds : [])]);
+    pcSync.deletedIds = [...del].slice(-200);
+
+    if((+d.settingsAt || 0) > pcSync.settingsAt && d.settings){
+      const st = d.settings;
+      if(st.capital != null) pcCapitalEl.value = st.capital;
+      if(st.cycleAmount != null) pcCycleAmountEl.value = st.cycleAmount;
+      if(st.trades != null) pcTradesEl.value = st.trades;
+      if(st.profitTarget != null) pcProfitTargetEl.value = st.profitTarget;
+      pcSync.settingsAt = +d.settingsAt;
+    }
+    if((+d.scenarioAt || 0) > pcSync.scenarioAt && d.scenario){
+      const sc = d.scenario;
+      pcScenarioStates = (Array.isArray(sc.states) ? sc.states : []).filter(x=>x==='win'||x==='loss'||x==='neutral');
+      pcScenarioAmounts = (Array.isArray(sc.amounts) ? sc.amounts : []).map(a=> (typeof a==='number' && isFinite(a) && a>0) ? a : null);
+      pcScenarioLinks = (Array.isArray(sc.links) ? sc.links : []).map(x=> typeof x==='string' ? x : null);
+      pcSync.scenarioAt = +d.scenarioAt;
+    }
+    const map = new Map();
+    [...pcHistory, ...(Array.isArray(d.history) ? d.history : [])].forEach(e=>{
+      if(e && e.id && !del.has(e.id) && !map.has(e.id)) map.set(e.id, e);
+    });
+    pcHistory = [...map.values()].sort((a,b)=> new Date(b.date) - new Date(a.date)).slice(0, 50);
+    pcSaveHistoryList(pcHistory);
+    pcPersistSync();
+    renderProCalc(false);
+    pcRenderHistory();
+  } finally {
+    pcSyncMuted = false;
+  }
+}
+
+let pcPushTimer = null;
+function pcSchedulePush(){
+  if(pcSyncMuted) return;
+  clearTimeout(pcPushTimer);
+  pcPushTimer = setTimeout(pcPushNow, 800);
+}
+// Read-merge-write, so a push from this device never overwrites a newer
+// change that another device already uploaded.
+async function pcPushNow(){
+  if(typeof cloudSyncConfigured === 'undefined' || !cloudSyncConfigured || !cloudUser || !cloudDb || !window.__fsModular) return;
+  try{
+    const { doc, getDoc, setDoc, serverTimestamp } = window.__fsModular;
+    const ref = doc(cloudDb, 'users', cloudUser.uid, 'meta', 'procalc');
+    const snap = await getDoc(ref);
+    if(snap.exists()) pcApplyRemote(snap.data());
+    await setDoc(ref, { ...pcBuildDoc(), updatedAt: serverTimestamp() });
+  }catch(e){
+    console.warn('Pro Calculator cloud push failed:', e);
+  }
+}
+window.pcStartCloudSync = function(uid){
+  const { doc, onSnapshot } = window.__fsModular;
+  let first = true;
+  return onSnapshot(doc(cloudDb, 'users', uid, 'meta', 'procalc'), snap=>{
+    if(snap.metadata && snap.metadata.hasPendingWrites) return; // echo of our own write
+    const wasFirst = first; first = false;
+    if(!snap.exists()){
+      if(wasFirst){
+        // First device to use cloud sync for the calculator seeds the cloud with its data.
+        const now = Date.now();
+        if(!pcSync.settingsAt && loadPcSettingsFromStorage()) pcSync.settingsAt = now;
+        if(!pcSync.scenarioAt && pcScenarioStates.some(x=>x !== 'neutral')) pcSync.scenarioAt = now;
+        pcPersistSync();
+        pcPushNow();
+      }
+      return;
+    }
+    const remote = snap.data();
+    pcApplyRemote(remote);
+    // On the first snapshot, upload anything this device has that the cloud does not.
+    if(wasFirst && pcDocSig(pcBuildDoc()) !== pcDocSig(remote)) pcPushNow();
+  }, err=>console.warn('Pro Calculator listener error:', err));
+};
 
 /* =====================================================================
    TRADE MODAL
@@ -8024,7 +8169,9 @@ function startCloudSync(uid){
   const unsubTrades = onSnapshot(collection(cloudDb, 'users', uid, 'trades'), pullAndApply, (err)=>console.warn('Cloud listener error (trades):', err));
   const unsubPositions = onSnapshot(collection(cloudDb, 'users', uid, 'positions'), pullAndApply, (err)=>console.warn('Cloud listener error (positions):', err));
   const unsubNotes = onSnapshot(collection(cloudDb, 'users', uid, 'notes'), pullAndApply, (err)=>console.warn('Cloud listener error (notes):', err));
-  cloudUnsubscribe = ()=>{ unsubMeta(); unsubTrades(); unsubPositions(); unsubNotes(); };
+  let unsubPc = ()=>{};
+  try{ if(window.pcStartCloudSync) unsubPc = window.pcStartCloudSync(uid) || unsubPc; }catch(e){ console.warn('Pro Calculator sync start failed:', e); }
+  cloudUnsubscribe = ()=>{ unsubMeta(); unsubTrades(); unsubPositions(); unsubNotes(); unsubPc(); };
 }
 
 function stopCloudSync(){
