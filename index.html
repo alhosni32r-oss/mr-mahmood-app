@@ -1397,7 +1397,7 @@
   }
 
   /* =====================================================================
-     v91 DESIGN LAYER — "Ink & Brass"
+     v92 DESIGN LAYER — "Ink & Brass"
      Dark-first tonal elevation, one brand accent, a floating bottom tab
      bar and bottom sheets on phones. Overrides the earlier polish layer.
      ===================================================================== */
@@ -1709,7 +1709,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v91</span>
+      <span id="sidebarVersionText">v92</span>
     </div>
   </div>
 </aside>
@@ -3252,7 +3252,7 @@ const TRANSLATIONS = {
     'recover.scan': 'ابحث عن صفقات مفقودة', 'recover.scanning': 'جارٍ البحث…', 'recover.noCloud': 'سجّل الدخول للمزامنة السحابية أولاً ليشمل البحث السحابة. بحثت في هذا الجهاز فقط.',
     'recover.summary': 'في السحابة: {cloud}. الظاهر في حساباتك: {shown}.', 'recover.none': 'لم أجد صفقات مفقودة. كل الصفقات المحفوظة ظاهرة في حساباتك.',
     'recover.found': 'صفقات لا تظهر في حساباتك: {n:trade}، من {from} إلى {to}.', 'recover.restore': 'استرجاعها إلى الحساب «{acc}»',
-    'recover.confirm': 'سيتم إضافة {n:trade} إلى الحساب «{acc}». متابعة؟', 'recover.done': 'تم استرجاع {n:trade}', 'recover.error': 'تعذّر الوصول إلى السحابة. تأكد من الإنترنت ثم حاول مرة أخرى.',
+    'recover.confirm': 'سيتم إضافة {n:trade} إلى الحساب «{acc}». متابعة؟', 'recover.done': 'تم استرجاع {n:trade}', 'recover.error': 'تعذّر الوصول إلى السحابة.', 'recover.quota': 'السبب: تجاوز الحد اليومي المجاني لقراءات Firebase. يعود الحد بعد منتصف الليل بتوقيت المحيط الهادئ (حوالي 12 ظهراً بتوقيت عُمان). بحثت في هذا الجهاز فقط.',
     'tab.journal': 'السجل', 'tab.more': 'المزيد', 'tab.add': 'إضافة', 'tab.close': 'إغلاق', 'tab.addTitle': 'ماذا تريد أن تضيف؟',
     'tab.addTrade': 'صفقة مغلقة', 'tab.addTradeSub': 'سجّل صفقة انتهت بربح أو خسارة', 'tab.addPosition': 'صفقة مفتوحة', 'tab.addPositionSub': 'تابع صفقة ما زالت جارية وأغلقها لاحقاً',
     'tab.addProcalc': 'من حاسبة المحترفين', 'tab.addProcalcSub': 'اضغط مطولاً على مربع وسجّل الصفقة',
@@ -3559,7 +3559,7 @@ const TRANSLATIONS = {
     'recover.scan': 'Find missing trades', 'recover.scanning': 'Searching…', 'recover.noCloud': 'Sign in to cloud sync first so the search includes the cloud. Only this device was searched.',
     'recover.summary': 'In the cloud: {cloud}. Shown in your accounts: {shown}.', 'recover.none': 'No missing trades found. Every saved trade is shown in your accounts.',
     'recover.found': 'Found {n:trade} not shown, from {from} to {to}.', 'recover.restore': 'Restore them to “{acc}”',
-    'recover.confirm': '{n:trade} will be added to “{acc}”. Continue?', 'recover.done': 'Restored {n:trade}', 'recover.error': 'Could not reach the cloud. Check your connection and try again.',
+    'recover.confirm': '{n:trade} will be added to “{acc}”. Continue?', 'recover.done': 'Restored {n:trade}', 'recover.error': 'Could not reach the cloud.', 'recover.quota': 'Reason: the free daily Firebase read limit was exceeded. It resets at midnight Pacific time. Only this device was searched.',
     'tab.journal': 'Journal', 'tab.more': 'More', 'tab.add': 'Add', 'tab.close': 'Close', 'tab.addTitle': 'What do you want to add?',
     'tab.addTrade': 'Closed trade', 'tab.addTradeSub': 'Log a trade that ended in a win or a loss', 'tab.addPosition': 'Open position', 'tab.addPositionSub': 'Track a running trade and close it later',
     'tab.addProcalc': 'From the Pro Calculator', 'tab.addProcalcSub': 'Long-press a square and log the trade',
@@ -5349,7 +5349,13 @@ window.pcStartCloudSync = function(uid){
       } else {
         note = t('recover.noCloud');
       }
-    }catch(e){ console.warn('recover scan failed', e); out.textContent = t('recover.error'); return; }
+    }catch(e){
+      // keep going with this device, and show the real reason from Firebase
+      console.warn('recover scan failed', e);
+      const code = (e && (e.code || e.name)) || 'unknown';
+      note = t('recover.error') + ' (' + escHtml(code) + (e && e.message ? ': ' + escHtml(String(e.message).slice(0,160)) : '') + ')';
+      if(code === 'resource-exhausted' || /quota/i.test(e && e.message || '')) note += ' ' + t('recover.quota');
+    }
     // this device: the active-account mirror and every stored account
     try{
       const mirror = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
