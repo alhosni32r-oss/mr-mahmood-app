@@ -1397,7 +1397,7 @@
   }
 
   /* =====================================================================
-     v90 DESIGN LAYER — "Ink & Brass"
+     v91 DESIGN LAYER — "Ink & Brass"
      Dark-first tonal elevation, one brand accent, a floating bottom tab
      bar and bottom sheets on phones. Overrides the earlier polish layer.
      ===================================================================== */
@@ -1558,7 +1558,10 @@
   .jcard-actions{ display:flex; gap:8px; }
   .jcard-actions button{ flex:1; }
 
-  /* ---- audit fixes (v87–v90) ---- */
+  /* ---- audit fixes ---- */
+  .recover-result{ margin-top:12px; font-size:14px; line-height:1.7; color:var(--text); }
+  .recover-result p{ margin:0 0 8px; }
+  #recoverScanBtn, #recoverRestoreBtn{ margin-top:8px; }
   /* line icons (replace emoji) */
   svg.ico{ width:18px !important; height:18px !important; flex:none; display:inline-block; vertical-align:-3px; margin-inline-end:8px; color:var(--purple-soft); }
   .panel-title{ display:flex; align-items:center; }
@@ -1706,7 +1709,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v90</span>
+      <span id="sidebarVersionText">v91</span>
     </div>
   </div>
 </aside>
@@ -2259,6 +2262,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px;"><path d="M12 3v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
         <span data-i18n="settings.installNow">تثبيت التطبيق الآن</span>
       </button>
+    </div>
+
+    <div class="panel settings-section" id="recoverSection">
+      <h3><svg class="ico" aria-hidden="true"><use href="#i-cloud"/></svg><span data-i18n="recover.title">البحث عن صفقات مفقودة</span></h3>
+      <div class="settings-sub" data-i18n="recover.desc">يبحث في السحابة وفي هذا الجهاز عن صفقات محفوظة لكنها لا تظهر في حساباتك، ثم يسترجعها بعد موافقتك.</div>
+      <button class="btn-primary" type="button" id="recoverScanBtn" data-i18n="recover.scan">ابحث عن صفقات مفقودة</button>
+      <div id="recoverResult" class="recover-result"></div>
     </div>
 
     <div class="panel settings-section">
@@ -3238,6 +3248,11 @@ const TRANSLATIONS = {
     'dash.emptyTitle': 'ابدأ سجلّك بأول صفقة', 'dash.emptyBody': 'بعد أول صفقة تظهر هنا نسبة نجاحك ومنحنى رأس المال والتقويم وأفضل أوقاتك.', 'dash.emptyAdd': 'إضافة صفقة مغلقة', 'dash.emptyPosition': 'إضافة صفقة مفتوحة',
     'jc.lot': 'لوت',
     'sessions.title': 'جلسات السوق (بتوقيت عُمان)', 'settings.buildLabel': 'الإصدار',
+    'recover.title': 'البحث عن صفقات مفقودة', 'recover.desc': 'يبحث في السحابة وفي هذا الجهاز عن صفقات محفوظة لكنها لا تظهر في حساباتك، ثم يسترجعها بعد موافقتك.',
+    'recover.scan': 'ابحث عن صفقات مفقودة', 'recover.scanning': 'جارٍ البحث…', 'recover.noCloud': 'سجّل الدخول للمزامنة السحابية أولاً ليشمل البحث السحابة. بحثت في هذا الجهاز فقط.',
+    'recover.summary': 'في السحابة: {cloud}. الظاهر في حساباتك: {shown}.', 'recover.none': 'لم أجد صفقات مفقودة. كل الصفقات المحفوظة ظاهرة في حساباتك.',
+    'recover.found': 'صفقات لا تظهر في حساباتك: {n:trade}، من {from} إلى {to}.', 'recover.restore': 'استرجاعها إلى الحساب «{acc}»',
+    'recover.confirm': 'سيتم إضافة {n:trade} إلى الحساب «{acc}». متابعة؟', 'recover.done': 'تم استرجاع {n:trade}', 'recover.error': 'تعذّر الوصول إلى السحابة. تأكد من الإنترنت ثم حاول مرة أخرى.',
     'tab.journal': 'السجل', 'tab.more': 'المزيد', 'tab.add': 'إضافة', 'tab.close': 'إغلاق', 'tab.addTitle': 'ماذا تريد أن تضيف؟',
     'tab.addTrade': 'صفقة مغلقة', 'tab.addTradeSub': 'سجّل صفقة انتهت بربح أو خسارة', 'tab.addPosition': 'صفقة مفتوحة', 'tab.addPositionSub': 'تابع صفقة ما زالت جارية وأغلقها لاحقاً',
     'tab.addProcalc': 'من حاسبة المحترفين', 'tab.addProcalcSub': 'اضغط مطولاً على مربع وسجّل الصفقة',
@@ -3540,6 +3555,11 @@ const TRANSLATIONS = {
     'dash.emptyTitle': 'Start your journal with a first trade', 'dash.emptyBody': 'After your first trade, your win rate, equity curve, calendar and best hours appear here.', 'dash.emptyAdd': 'Add closed trade', 'dash.emptyPosition': 'Add open position',
     'jc.lot': 'lot',
     'sessions.title': 'Market sessions (Oman time)', 'settings.buildLabel': 'Version',
+    'recover.title': 'Find missing trades', 'recover.desc': 'Searches the cloud and this device for saved trades that are not shown in your accounts, then restores them with your OK.',
+    'recover.scan': 'Find missing trades', 'recover.scanning': 'Searching…', 'recover.noCloud': 'Sign in to cloud sync first so the search includes the cloud. Only this device was searched.',
+    'recover.summary': 'In the cloud: {cloud}. Shown in your accounts: {shown}.', 'recover.none': 'No missing trades found. Every saved trade is shown in your accounts.',
+    'recover.found': 'Found {n:trade} not shown, from {from} to {to}.', 'recover.restore': 'Restore them to “{acc}”',
+    'recover.confirm': '{n:trade} will be added to “{acc}”. Continue?', 'recover.done': 'Restored {n:trade}', 'recover.error': 'Could not reach the cloud. Check your connection and try again.',
     'tab.journal': 'Journal', 'tab.more': 'More', 'tab.add': 'Add', 'tab.close': 'Close', 'tab.addTitle': 'What do you want to add?',
     'tab.addTrade': 'Closed trade', 'tab.addTradeSub': 'Log a trade that ended in a win or a loss', 'tab.addPosition': 'Open position', 'tab.addPositionSub': 'Track a running trade and close it later',
     'tab.addProcalc': 'From the Pro Calculator', 'tab.addProcalcSub': 'Long-press a square and log the trade',
@@ -5301,6 +5321,72 @@ window.pcStartCloudSync = function(uid){
   if(mq.addEventListener) mq.addEventListener('change', placeNav); else mq.addListener(placeNav);
   placeNav();
   syncTabs();
+})();
+
+/* =====================================================================
+   RECOVER MISSING TRADES — finds trades saved in the cloud or on this
+   device that no account currently shows (e.g. linked to an account id
+   that no longer exists, or dropped by an older sync), and restores them
+   into the active account after the person confirms.
+   ===================================================================== */
+(function(){
+  const btn = document.getElementById('recoverScanBtn');
+  const out = document.getElementById('recoverResult');
+  if(!btn || !out) return;
+  let lastFound = [];
+  function shownIds(){ const s = new Set(); (accounts || []).forEach(a=> (a.trades || []).forEach(x=> s.add(x.id))); (trades || []).forEach(x=> s.add(x.id)); return s; }
+  btn.addEventListener('click', async ()=>{
+    out.textContent = t('recover.scanning');
+    const have = shownIds();
+    const found = new Map();
+    let cloudCount = null, note = '';
+    try{
+      if(cloudSyncConfigured && cloudUser && cloudDb && window.__fsModular){
+        const { collection, getDocs } = window.__fsModular;
+        const snap = await getDocs(collection(cloudDb, 'users', cloudUser.uid, 'trades'));
+        cloudCount = 0;
+        snap.forEach(d=>{ const x = d.data(); cloudCount++; if(x && x.id && !have.has(x.id)) found.set(x.id, x); });
+      } else {
+        note = t('recover.noCloud');
+      }
+    }catch(e){ console.warn('recover scan failed', e); out.textContent = t('recover.error'); return; }
+    // this device: the active-account mirror and every stored account
+    try{
+      const mirror = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const stored = JSON.parse(localStorage.getItem(ACCOUNTS_STORAGE_KEY) || '[]');
+      [...(Array.isArray(mirror) ? mirror : []), ...(Array.isArray(stored) ? stored.flatMap(a=> a.trades || []) : [])]
+        .forEach(x=>{ if(x && x.id && !have.has(x.id) && !found.has(x.id)) found.set(x.id, x); });
+    }catch(e){}
+    lastFound = [...found.values()].filter(x=> x.date).sort((a,b)=> String(a.date).localeCompare(String(b.date)));
+    let html = '';
+    if(cloudCount !== null) html += `<p>${t('recover.summary', {cloud: pcCount(cloudCount,'trade'), shown: pcCount(have.size,'trade')})}</p>`;
+    if(note) html += `<p>${note}</p>`;
+    if(!lastFound.length){
+      html += `<p><strong>${t('recover.none')}</strong></p>`;
+    } else {
+      const acc = (accounts || []).find(a=> a.id === activeAccountId);
+      html += `<p><strong>${t('recover.found', {n: lastFound.length, from: lastFound[0].date, to: lastFound[lastFound.length-1].date})}</strong></p>
+        <button class="btn-primary" type="button" id="recoverRestoreBtn">${t('recover.restore', {acc: escHtml(acc ? acc.name : '')})}</button>`;
+    }
+    out.innerHTML = html;
+    const rb = document.getElementById('recoverRestoreBtn');
+    if(rb) rb.addEventListener('click', async ()=>{
+      const acc = (accounts || []).find(a=> a.id === activeAccountId);
+      if(!(await showConfirmModal(t('recover.confirm', {n: lastFound.length, acc: acc ? acc.name : ''})))) return;
+      const ids = shownIds();
+      const now = Date.now();
+      let added = 0;
+      lastFound.forEach(x=>{ if(!ids.has(x.id)){ const { accountId, ...rest } = x; trades.push({ ...rest, updatedAt: now }); added++; } });
+      trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
+      saveTradesToStorage();
+      syncActiveAccountTrades();
+      renderDashboard();
+      renderJournal();
+      showToast(t('recover.done', {n: added}));
+      out.innerHTML = `<p><strong>${t('recover.done', {n: added})}</strong></p>`;
+      lastFound = [];
+    });
+  });
 })();
 
 /* =====================================================================
