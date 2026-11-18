@@ -1397,7 +1397,7 @@
   }
 
   /* =====================================================================
-     v92 DESIGN LAYER — "Ink & Brass"
+     v93 DESIGN LAYER — "Ink & Brass"
      Dark-first tonal elevation, one brand accent, a floating bottom tab
      bar and bottom sheets on phones. Overrides the earlier polish layer.
      ===================================================================== */
@@ -1709,7 +1709,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v92</span>
+      <span id="sidebarVersionText">v93</span>
     </div>
   </div>
 </aside>
@@ -5341,7 +5341,11 @@ window.pcStartCloudSync = function(uid){
     const found = new Map();
     let cloudCount = null, note = '';
     try{
-      if(cloudSyncConfigured && cloudUser && cloudDb && window.__fsModular){
+      if(serverCacheReady()){
+        // the live listener copy: no extra reads
+        cloudCount = 0;
+        serverCache.trades.forEach(x=>{ cloudCount++; if(x && x.id && !have.has(x.id)) found.set(x.id, x); });
+      } else if(cloudSyncConfigured && cloudUser && cloudDb && window.__fsModular){
         const { collection, getDocs } = window.__fsModular;
         const snap = await getDocs(collection(cloudDb, 'users', cloudUser.uid, 'trades'));
         cloudCount = 0;
@@ -8703,7 +8707,22 @@ function mergeAccounts(localAccounts, serverAccounts){
 // Reads every trade/position/note document plus the lightweight accounts
 // metadata document, and reassembles them into the same {accounts, notes}
 // shape the rest of the app already works with.
+// Live copy of the cloud, kept up to date by the real-time listeners using
+// only the documents that changed (snapshot.docChanges()). Reading state from
+// here costs no Firestore reads; earlier versions re-read EVERY trade, note
+// and position on each change, which exhausted the free daily read quota.
+let serverCache = null;
+function serverStateFromCache(c){
+  if(!c || !c.meta) return null;
+  const tradesByAccount = {}, positionsByAccount = {};
+  c.trades.forEach(d => { (tradesByAccount[d.accountId] = tradesByAccount[d.accountId] || []).push(d); });
+  c.positions.forEach(d => { (positionsByAccount[d.accountId] = positionsByAccount[d.accountId] || []).push(d); });
+  const accountsFull = (c.meta.accountsMeta || []).map(am => ({ ...am, trades: tradesByAccount[am.id] || [], openPositions: positionsByAccount[am.id] || [] }));
+  return { accounts: accountsFull, notes: [...c.notes.values()], activeAccountId: c.meta.activeAccountId };
+}
+function serverCacheReady(){ return !!(serverCache && serverCache.seen.size === 4); }
 async function fetchServerState(){
+  if(serverCacheReady()) return serverStateFromCache(serverCache);
   const { doc, collection, getDoc, getDocs } = window.__fsModular;
   const uid = cloudUser.uid;
   const [metaSnap, tradesSnap, positionsSnap, notesSnap] = await Promise.all([
@@ -8835,7 +8854,7 @@ async function writeMergedStateToCloud(mergedAccounts, mergedNotes, newActiveAcc
   if(writeCount > 0) await batch.commit();
 }
 
-async function pushToCloud(){
+async function pushToCloud(opts){
   if(!cloudSyncConfigured){
     console.warn('pushToCloud skipped: cloud sync not configured');
     showToast(t('cloud.notConfiguredWarning'));
@@ -8853,7 +8872,7 @@ async function pushToCloud(){
     // `await` — reading the global `accounts`/`notes` arrays again LATER in
     // this function isn't safe, since the real-time listener can reassign
     // those same globals while we're mid-flight waiting on the network.
-    lastLocalEditAt = Date.now();
+    if(!(opts && opts.auto)) lastLocalEditAt = Date.now();
     const intendedAccounts = JSON.parse(JSON.stringify(accounts));
     const intendedNotes = JSON.parse(JSON.stringify(notes));
     const intendedActiveAccountId = activeAccountId;
@@ -8927,7 +8946,13 @@ function rememberServerIds(state){
 }
 function listenerRecentEdit(){ return (Date.now() - lastLocalEditAt) < LISTENER_MERGE_GRACE_MS; }
 function mergeListForListener(localList, serverList){
-  if(listenerRecentEdit()) return mergeItemsById(localList, serverList);
+  if(listenerRecentEdit()){
+    // keep this device's just-made edits, but still honour deletions made
+    // elsewhere (an item the cloud had before and no longer has)
+    const serverIds = new Set((serverList || []).map(x=> x && x.id));
+    const fresh = Date.now() - LISTENER_MERGE_GRACE_MS;
+    return mergeItemsById(localList, serverList).filter(x=> serverIds.has(x.id) || !knownServerIds.has(x.id) || (x.updatedAt || 0) > fresh);
+  }
   const serverIds = new Set((serverList || []).map(x=> x && x.id));
   const out = (serverList || []).slice();
   (localList || []).forEach(x=>{ if(x && x.id && !serverIds.has(x.id) && !knownServerIds.has(x.id)) out.push(x); });
@@ -8994,7 +9019,7 @@ function startCloudSync(uid){
     const needsUpload = hasUnsyncedItems(mergedAccounts, mergedNotes, serverState);
     rememberServerIds(serverState);
     applyMergedStateLocally(mergedAccounts, mergedNotes, activeAccountId);
-    if(needsUpload && !wasFirstSnapshot) pushToCloud(); // local items that never reached the cloud
+    if(needsUpload && !wasFirstSnapshot) pushToCloud({auto:true}); // local items that never reached the cloud
     if(!wasFirstSnapshot){
       showToast(t('cloud.synced'));
       maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
@@ -9005,21 +9030,37 @@ function startCloudSync(uid){
       // reloaded moments after saving). Push once here so that edit
       // actually reaches the server too, instead of sitting local-only
       // until some unrelated future save happens to trigger a push.
-      pushToCloud();
+      pushToCloud({auto:true});
     }
     firstSnapshot = false;
   };
 
-  const unsubMeta = onSnapshot(doc(cloudDb, 'users', uid, 'meta', 'main'), pullAndApply, (err)=>console.warn('Cloud listener error (meta):', err));
-  const unsubTrades = onSnapshot(collection(cloudDb, 'users', uid, 'trades'), pullAndApply, (err)=>console.warn('Cloud listener error (trades):', err));
-  const unsubPositions = onSnapshot(collection(cloudDb, 'users', uid, 'positions'), pullAndApply, (err)=>console.warn('Cloud listener error (positions):', err));
-  const unsubNotes = onSnapshot(collection(cloudDb, 'users', uid, 'notes'), pullAndApply, (err)=>console.warn('Cloud listener error (notes):', err));
+  serverCache = { meta: null, trades: new Map(), positions: new Map(), notes: new Map(), seen: new Set() };
+  let applyTimer = null;
+  const scheduleApply = ()=>{ if(!serverCacheReady()) return; clearTimeout(applyTimer); applyTimer = setTimeout(pullAndApply, 250); };
+  const onCollection = (name)=> (snap)=>{
+    snap.docChanges().forEach(ch=>{
+      if(ch.type === 'removed') serverCache[name].delete(ch.doc.id);
+      else serverCache[name].set(ch.doc.id, ch.doc.data());
+    });
+    serverCache.seen.add(name);
+    scheduleApply();
+  };
+  const unsubMeta = onSnapshot(doc(cloudDb, 'users', uid, 'meta', 'main'), (snap)=>{
+    serverCache.meta = snap.exists() ? snap.data() : null;
+    serverCache.seen.add('meta');
+    scheduleApply();
+  }, (err)=>console.warn('Cloud listener error (meta):', err));
+  const unsubTrades = onSnapshot(collection(cloudDb, 'users', uid, 'trades'), onCollection('trades'), (err)=>console.warn('Cloud listener error (trades):', err));
+  const unsubPositions = onSnapshot(collection(cloudDb, 'users', uid, 'positions'), onCollection('positions'), (err)=>console.warn('Cloud listener error (positions):', err));
+  const unsubNotes = onSnapshot(collection(cloudDb, 'users', uid, 'notes'), onCollection('notes'), (err)=>console.warn('Cloud listener error (notes):', err));
   let unsubPc = ()=>{};
   try{ if(window.pcStartCloudSync) unsubPc = window.pcStartCloudSync(uid) || unsubPc; }catch(e){ console.warn('Pro Calculator sync start failed:', e); }
   cloudUnsubscribe = ()=>{ unsubMeta(); unsubTrades(); unsubPositions(); unsubNotes(); unsubPc(); };
 }
 
 function stopCloudSync(){
+  serverCache = null;
   if(cloudUnsubscribe){ cloudUnsubscribe(); cloudUnsubscribe = null; }
 }
 
@@ -9043,7 +9084,7 @@ async function reconcileAfterReconnect(){
 }
 window.addEventListener('online', reconcileAfterReconnect);
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible') reconcileAfterReconnect();
+  if(document.visibilityState === 'visible' && cloudUser && cloudDb) pushToCloud({auto:true});
 });
 
 if(cloudSyncConfigured){
