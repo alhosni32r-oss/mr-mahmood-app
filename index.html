@@ -1397,7 +1397,7 @@
   }
 
   /* =====================================================================
-     v88 DESIGN LAYER — "Ink & Brass"
+     v89 DESIGN LAYER — "Ink & Brass"
      Dark-first tonal elevation, one brand accent, a floating bottom tab
      bar and bottom sheets on phones. Overrides the earlier polish layer.
      ===================================================================== */
@@ -1558,7 +1558,7 @@
   .jcard-actions{ display:flex; gap:8px; }
   .jcard-actions button{ flex:1; }
 
-  /* ---- audit fixes (v87–v88) ---- */
+  /* ---- audit fixes (v87–v89) ---- */
   /* line icons (replace emoji) */
   svg.ico{ width:18px !important; height:18px !important; flex:none; display:inline-block; vertical-align:-3px; margin-inline-end:8px; color:var(--purple-soft); }
   .panel-title{ display:flex; align-items:center; }
@@ -1706,7 +1706,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v88</span>
+      <span id="sidebarVersionText">v89</span>
     </div>
   </div>
 </aside>
@@ -3200,7 +3200,7 @@ const TRANSLATIONS = {
     'dash.prevMonth': 'الشهر السابق', 'dash.nextMonth': 'الشهر التالي',
     'dash.weekN': 'الأسبوع {n}',
     'dash.monthlyStats': 'إحصائيات الشهر:', 'dash.streakDays': 'أيام رابحة متتالية: {n}',
-    'dash.dow1': 'إث', 'dash.dow2': 'ثلا', 'dash.dow3': 'أرب', 'dash.dow4': 'خم', 'dash.dow5': 'جمعة',
+    'dash.dow1': 'إث', 'dash.dow2': 'ثلا', 'dash.dow3': 'أرب', 'dash.dow4': 'خم', 'dash.dow5': 'جمعة', 'dash.dow6': 'سبت', 'dash.dow7': 'أحد',
     'dash.start': 'البداية', 'dash.totalTradesLabel': 'إجمالي {n:trade}', 'dash.tradesCount': '{n:trade}',
     'dash.recentEmpty': 'لا توجد صفقات بعد — أضف أول صفقة لتظهر هنا',
     'dash.week1': 'الأسبوع الأول', 'dash.week2': 'الأسبوع الثاني', 'dash.week3': 'الأسبوع الثالث', 'dash.week4': 'الأسبوع الرابع',
@@ -3502,7 +3502,7 @@ const TRANSLATIONS = {
     'dash.prevMonth': 'Previous month', 'dash.nextMonth': 'Next month',
     'dash.weekN': 'Week {n}',
     'dash.monthlyStats': 'Monthly stats:', 'dash.streakDays': 'Winning days in a row: {n}',
-    'dash.dow1': 'Mon', 'dash.dow2': 'Tue', 'dash.dow3': 'Wed', 'dash.dow4': 'Thu', 'dash.dow5': 'Fri',
+    'dash.dow1': 'Mon', 'dash.dow2': 'Tue', 'dash.dow3': 'Wed', 'dash.dow4': 'Thu', 'dash.dow5': 'Fri', 'dash.dow6': 'Sat', 'dash.dow7': 'Sun',
     'dash.start': 'Start', 'dash.totalTradesLabel': 'Total {n:trade}', 'dash.tradesCount': '{n:trade}',
     'dash.recentEmpty': 'No trades yet — add your first trade to see it here',
     'dash.week1': 'Week 1', 'dash.week2': 'Week 2', 'dash.week3': 'Week 3', 'dash.week4': 'Week 4',
@@ -7800,15 +7800,21 @@ function renderCalendar(){
   const firstDow = (firstOfMonth.getDay() + 6) % 7; // 0=Mon ... 6=Sun
   firstMonday.setDate(firstOfMonth.getDate() - firstDow);
 
+  // Weekend columns appear only when this month actually has a Saturday or
+  // Sunday trade, so such trades are never hidden from the calendar.
+  const monthPrefix = `${year}-${String(month+1).padStart(2,'0')}-`;
+  const showWeekend = Object.keys(dayPL).some(k=> k.startsWith(monthPrefix) && [0,6].includes(new Date(k + 'T00:00:00').getDay()));
+  const DAYS = showWeekend ? 7 : 5;
   const lastDow = (lastOfMonth.getDay() + 6) % 7;
-  const daysToFriday = Math.max(4 - lastDow, 0);
+  const daysToFriday = Math.max((DAYS - 1) - lastDow, 0);
   const lastFriday = new Date(lastOfMonth);
   lastFriday.setDate(lastOfMonth.getDate() + daysToFriday);
 
   // day-of-week header row (Mon–Fri)
   const dowWrap = document.createElement('div');
   dowWrap.className = 'week-dow';
-  dowWrap.innerHTML = ['dash.dow1','dash.dow2','dash.dow3','dash.dow4','dash.dow5'].map(k=>`<span>${t(k)}</span>`).join('');
+  dowWrap.innerHTML = ['dash.dow1','dash.dow2','dash.dow3','dash.dow4','dash.dow5','dash.dow6','dash.dow7'].slice(0, DAYS).map(k=>`<span>${t(k)}</span>`).join('');
+  dowWrap.style.gridTemplateColumns = `repeat(${DAYS}, 1fr)`;
   wrap.appendChild(dowWrap);
 
   let weekStart = new Date(firstMonday);
@@ -7817,7 +7823,7 @@ function renderCalendar(){
     let net = 0;
     let daysHtml = '';
     let inMonthCount = 0;
-    for(let i=0; i<5; i++){
+    for(let i=0; i<DAYS; i++){
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const key = fmtKey(d);
@@ -7848,7 +7854,7 @@ function renderCalendar(){
 
     const netColor = net > 0 ? 'var(--green)' : net < 0 ? 'var(--red)' : 'var(--muted-2)';
     const rangeStart = weekStart;
-    const rangeEnd = new Date(weekStart); rangeEnd.setDate(weekStart.getDate() + 4);
+    const rangeEnd = new Date(weekStart); rangeEnd.setDate(weekStart.getDate() + DAYS - 1);
     const rangeLabel = `${rangeStart.getDate()}–${rangeEnd.getDate()}`;
 
     const block = document.createElement('div');
@@ -7858,7 +7864,7 @@ function renderCalendar(){
         <span>${t('dash.weekN', {n: weekIndex})} <span class="wk-range">(${rangeLabel})</span></span>
         <span class="wk-net" style="color:${netColor}">${net !== 0 ? fmtMoney(net) : '—'}</span>
       </div>
-      <div class="week-days">${daysHtml}</div>
+      <div class="week-days" style="grid-template-columns:repeat(${DAYS}, 1fr)">${daysHtml}</div>
     `;
     wrap.appendChild(block);
 
@@ -8758,6 +8764,7 @@ async function pushToCloud(){
 
     applyMergedStateLocally(mergedAccounts, mergedNotes, intendedActiveAccountId);
     await writeMergedStateToCloud(accounts, notes, activeAccountId, serverState);
+    rememberServerIds({accounts, notes});
   }catch(e){
     console.warn('Cloud push failed:', e);
     showToast(t('cloud.pushFailed'));
@@ -8798,12 +8805,39 @@ const LISTENER_MERGE_GRACE_MS = 8000;
 // itself made an edit within the last few seconds (almost certainly still
 // mid-upload) — otherwise the server's copy simply wins outright, since it
 // represents whatever the authoritative latest combined state already is.
+// Ids this device has already seen in the cloud. It is what tells two cases
+// apart when an item exists here but not on the server:
+//   - seen before  → it was deleted on another device: drop it here too;
+//   - never seen   → it was created here and never finished uploading
+//                    (offline, closed too soon, quota): KEEP it and upload it.
+// Earlier versions treated both the same way and silently discarded the
+// second kind whenever the app opened, which could lose whole days of trades.
+const KNOWN_SERVER_IDS_KEY = 'mrmahmood_known_server_ids_v1';
+let knownServerIds = new Set();
+try{ knownServerIds = new Set(JSON.parse(localStorage.getItem(KNOWN_SERVER_IDS_KEY) || '[]')); }catch(e){}
+function rememberServerIds(state){
+  if(!state) return;
+  (state.accounts || []).forEach(acc=>{
+    knownServerIds.add(acc.id);
+    (acc.trades || []).forEach(x=> x && x.id && knownServerIds.add(x.id));
+    (acc.openPositions || []).forEach(x=> x && x.id && knownServerIds.add(x.id));
+  });
+  (state.notes || []).forEach(x=> x && x.id && knownServerIds.add(x.id));
+  try{ localStorage.setItem(KNOWN_SERVER_IDS_KEY, JSON.stringify([...knownServerIds])); }catch(e){}
+}
+function listenerRecentEdit(){ return (Date.now() - lastLocalEditAt) < LISTENER_MERGE_GRACE_MS; }
+function mergeListForListener(localList, serverList){
+  if(listenerRecentEdit()) return mergeItemsById(localList, serverList);
+  const serverIds = new Set((serverList || []).map(x=> x && x.id));
+  const out = (serverList || []).slice();
+  (localList || []).forEach(x=>{ if(x && x.id && !serverIds.has(x.id) && !knownServerIds.has(x.id)) out.push(x); });
+  return out;
+}
 function mergeItemsByIdForListener(localList, serverList){
-  if((Date.now() - lastLocalEditAt) >= LISTENER_MERGE_GRACE_MS) return serverList || [];
-  return mergeItemsById(localList, serverList);
+  return mergeListForListener(localList, serverList);
 }
 function mergeAccountsForListener(localAccounts, serverAccounts){
-  if((Date.now() - lastLocalEditAt) >= LISTENER_MERGE_GRACE_MS) return serverAccounts || localAccounts;
+  const recent = listenerRecentEdit();
   const serverById = new Map((serverAccounts || []).map(a => [a.id, a]));
   const localById = new Map((localAccounts || []).map(a => [a.id, a]));
   const allIds = new Set([...serverById.keys(), ...localById.keys()]);
@@ -8813,15 +8847,25 @@ function mergeAccountsForListener(localAccounts, serverAccounts){
     const server = serverById.get(id);
     if(local && server){
       merged.push({
-        ...server, ...local,
-        trades: mergeItemsById(local.trades, server.trades),
-        openPositions: mergeItemsById(local.openPositions, server.openPositions),
+        ...server, ...(recent ? local : {}),
+        trades: mergeListForListener(local.trades, server.trades),
+        openPositions: mergeListForListener(local.openPositions, server.openPositions),
       });
-    } else {
-      merged.push(local || server);
+    } else if(server){
+      merged.push(server);
+    } else if(local && (recent || !knownServerIds.has(id))){
+      merged.push(local); // an account created here that never reached the cloud
     }
   });
-  return merged;
+  return merged.length ? merged : (localAccounts || []);
+}
+// true when the merged state holds items the server doesn't have yet
+function hasUnsyncedItems(mergedAccounts, mergedNotes, serverState){
+  const ids = new Set();
+  (serverState.accounts || []).forEach(a=>{ ids.add(a.id); (a.trades||[]).forEach(x=>ids.add(x.id)); (a.openPositions||[]).forEach(x=>ids.add(x.id)); });
+  (serverState.notes || []).forEach(x=>ids.add(x.id));
+  return mergedAccounts.some(a=> !ids.has(a.id) || (a.trades||[]).some(x=>!ids.has(x.id)) || (a.openPositions||[]).some(x=>!ids.has(x.id)))
+      || (mergedNotes || []).some(x=>!ids.has(x.id));
 }
 
 function startCloudSync(uid){
@@ -8847,7 +8891,10 @@ function startCloudSync(uid){
     const wasFirstSnapshot = firstSnapshot;
     const mergedAccounts = mergeAccountsForListener(accounts, serverState.accounts);
     const mergedNotes = mergeItemsByIdForListener(notes, serverState.notes);
+    const needsUpload = hasUnsyncedItems(mergedAccounts, mergedNotes, serverState);
+    rememberServerIds(serverState);
     applyMergedStateLocally(mergedAccounts, mergedNotes, activeAccountId);
+    if(needsUpload && !wasFirstSnapshot) pushToCloud(); // local items that never reached the cloud
     if(!wasFirstSnapshot){
       showToast(t('cloud.synced'));
       maybeShowSyncNotification(tradesCountBefore, notesCountBefore);
