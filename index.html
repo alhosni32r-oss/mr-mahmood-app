@@ -3250,7 +3250,7 @@ const TRANSLATIONS = {
     'sessions.title': 'جلسات السوق (بتوقيت عُمان)', 'settings.buildLabel': 'الإصدار',
     'recover.title': 'البحث عن صفقات مفقودة', 'recover.desc': 'يبحث في السحابة وفي هذا الجهاز عن صفقات محفوظة لكنها لا تظهر في حساباتك، ثم يسترجعها بعد موافقتك.',
     'recover.scan': 'ابحث عن صفقات مفقودة', 'recover.scanning': 'جارٍ البحث…', 'recover.noCloud': 'سجّل الدخول للمزامنة السحابية أولاً ليشمل البحث السحابة. بحثت في هذا الجهاز فقط.',
-    'recover.summary': 'في السحابة: {cloud}. الظاهر في حساباتك: {shown}.', 'recover.none': 'لم أجد صفقات مفقودة. كل الصفقات المحفوظة ظاهرة في حساباتك.',
+    'recover.summary': 'في السحابة: {cloud}. الظاهر في حساباتك: {shown}.', 'recover.none': 'لم أجد صفقات مفقودة. كل الصفقات المحفوظة ظاهرة في حساباتك.', 'recover.noneDevice': 'لا توجد صفقات مفقودة في هذا الجهاز. السحابة لم تُفحص بعد.',
     'recover.found': 'صفقات لا تظهر في حساباتك: {n:trade}، من {from} إلى {to}.', 'recover.restore': 'استرجاعها إلى الحساب «{acc}»',
     'recover.confirm': 'سيتم إضافة {n:trade} إلى الحساب «{acc}». متابعة؟', 'recover.done': 'تم استرجاع {n:trade}', 'recover.error': 'تعذّر الوصول إلى السحابة.', 'recover.quota': 'السبب: تجاوز الحد اليومي المجاني لقراءات Firebase. يعود الحد بعد منتصف الليل بتوقيت المحيط الهادئ (حوالي 12 ظهراً بتوقيت عُمان). بحثت في هذا الجهاز فقط.',
     'tab.journal': 'السجل', 'tab.more': 'المزيد', 'tab.add': 'إضافة', 'tab.close': 'إغلاق', 'tab.addTitle': 'ماذا تريد أن تضيف؟',
@@ -3557,7 +3557,7 @@ const TRANSLATIONS = {
     'sessions.title': 'Market sessions (Oman time)', 'settings.buildLabel': 'Version',
     'recover.title': 'Find missing trades', 'recover.desc': 'Searches the cloud and this device for saved trades that are not shown in your accounts, then restores them with your OK.',
     'recover.scan': 'Find missing trades', 'recover.scanning': 'Searching…', 'recover.noCloud': 'Sign in to cloud sync first so the search includes the cloud. Only this device was searched.',
-    'recover.summary': 'In the cloud: {cloud}. Shown in your accounts: {shown}.', 'recover.none': 'No missing trades found. Every saved trade is shown in your accounts.',
+    'recover.summary': 'In the cloud: {cloud}. Shown in your accounts: {shown}.', 'recover.none': 'No missing trades found. Every saved trade is shown in your accounts.', 'recover.noneDevice': 'No missing trades on this device. The cloud has not been checked yet.',
     'recover.found': 'Found {n:trade} not shown, from {from} to {to}.', 'recover.restore': 'Restore them to “{acc}”',
     'recover.confirm': '{n:trade} will be added to “{acc}”. Continue?', 'recover.done': 'Restored {n:trade}', 'recover.error': 'Could not reach the cloud.', 'recover.quota': 'Reason: the free daily Firebase read limit was exceeded. It resets at midnight Pacific time. Only this device was searched.',
     'tab.journal': 'Journal', 'tab.more': 'More', 'tab.add': 'Add', 'tab.close': 'Close', 'tab.addTitle': 'What do you want to add?',
@@ -5368,7 +5368,7 @@ window.pcStartCloudSync = function(uid){
     if(cloudCount !== null) html += `<p>${t('recover.summary', {cloud: pcCount(cloudCount,'trade'), shown: pcCount(have.size,'trade')})}</p>`;
     if(note) html += `<p>${note}</p>`;
     if(!lastFound.length){
-      html += `<p><strong>${t('recover.none')}</strong></p>`;
+      html += `<p><strong>${t(cloudCount === null ? 'recover.noneDevice' : 'recover.none')}</strong></p>`;
     } else {
       const acc = (accounts || []).find(a=> a.id === activeAccountId);
       html += `<p><strong>${t('recover.found', {n: lastFound.length, from: lastFound[0].date, to: lastFound[lastFound.length-1].date})}</strong></p>
