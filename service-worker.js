@@ -2,7 +2,7 @@
 // get the latest version when online — the old v1 strategy was cache-first,
 // which meant an installed app could get permanently "stuck" on whatever
 // version was cached the very first time it was installed.
-const CACHE_NAME = 'mr-mahmood-v29';
+const CACHE_NAME = 'mr-mahmood-v30';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -39,7 +39,10 @@ self.addEventListener('fetch', (event) => {
     // online. Only fall back to the cached copy if the network request
     // fails (offline), so the app still works without internet.
     event.respondWith(
-      fetch(event.request)
+      // cache:'no-cache' revalidates with the server instead of reusing the
+      // browser's HTTP cache (GitHub Pages lets it keep pages for 10 minutes),
+      // so a newly published version shows up on the next open.
+      fetch(event.request, { cache: 'no-cache' })
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();

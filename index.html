@@ -1397,7 +1397,7 @@
   }
 
   /* =====================================================================
-     v89 DESIGN LAYER — "Ink & Brass"
+     v90 DESIGN LAYER — "Ink & Brass"
      Dark-first tonal elevation, one brand accent, a floating bottom tab
      bar and bottom sheets on phones. Overrides the earlier polish layer.
      ===================================================================== */
@@ -1558,7 +1558,7 @@
   .jcard-actions{ display:flex; gap:8px; }
   .jcard-actions button{ flex:1; }
 
-  /* ---- audit fixes (v87–v89) ---- */
+  /* ---- audit fixes (v87–v90) ---- */
   /* line icons (replace emoji) */
   svg.ico{ width:18px !important; height:18px !important; flex:none; display:inline-block; vertical-align:-3px; margin-inline-end:8px; color:var(--purple-soft); }
   .panel-title{ display:flex; align-items:center; }
@@ -1706,7 +1706,7 @@
         <span class="sidebar-status-dot" id="sidebarSyncDot"></span>
         <span id="sidebarSyncText" data-i18n="sidebar.offline">غير متصل</span>
       </span>
-      <span id="sidebarVersionText">v89</span>
+      <span id="sidebarVersionText">v90</span>
     </div>
   </div>
 </aside>
@@ -8455,7 +8455,15 @@ if(savedLang && savedLang !== currentLang){
    ===================================================================== */
 if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).then(reg=>{
+      // look for a newer version whenever the app comes back to the foreground
+      document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') reg.update().catch(()=>{}); });
+    }).catch(()=>{});
+    // when a new version takes over, reload once so it shows immediately
+    let reloadedForUpdate = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(reloadedForUpdate) return; reloadedForUpdate = true; window.location.reload();
+    });
   });
 }
 
